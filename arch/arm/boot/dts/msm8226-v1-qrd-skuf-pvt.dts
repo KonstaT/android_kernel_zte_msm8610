@@ -11,18 +11,12 @@
  */
 
 /dts-v1/;
-
-/include/ "msm8974pro-ab.dtsi"
-/include/ "msm8974-fluid.dtsi"
+/include/ "msm8226-v1.dtsi"
+/include/ "msm8226-qrd-skuf.dtsi"
 
 / {
-	model = "Qualcomm MSM 8974Pro FLUID";
-	compatible = "qcom,msm8974-fluid", "qcom,msm8974", "qcom,fluid";
-	qcom,msm-id = <209 3 0x10000>,
-		      <211 3 0x10000>,
-		      <212 3 0x10000>,
-		      <214 3 0x10000>,
-		      <215 3 0x10000>,
-		      <217 3 0x10000>,
-		      <218 3 0x10000>;
+	model = "Qualcomm MSM 8226v1 QRD PVT";
+	compatible = "qcom,msm8226-qrd", "qcom,msm8226", "qcom,skuf", "qcom,qrd";
+	qcom,board-id = <0x2000b 2>;
 };
+
