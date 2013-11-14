@@ -751,7 +751,9 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 		mdss_dsi_clk_req(ctrl_pdata, (int)arg);
 		break;
 	case MDSS_EVENT_DSI_CMDLIST_KOFF:
+		ctrl_pdata->recovery = (struct mdss_panel_recovery *)arg;
 		mdss_dsi_cmdlist_commit(ctrl_pdata, 1);
+		break;
 	case MDSS_EVENT_PANEL_UPDATE_FPS:
 		if (arg != NULL) {
 			rc = mdss_dsi_dfps_config(pdata, (int)arg);
@@ -1214,7 +1216,8 @@ int dsi_panel_device_register(struct device_node *pan_node,
 		}
 	}
 
-	if (gpio_is_valid(ctrl_pdata->disp_te_gpio)) {
+	if (gpio_is_valid(ctrl_pdata->disp_te_gpio) &&
+					pinfo->type == MIPI_CMD_PANEL) {
 		rc = gpio_request(ctrl_pdata->disp_te_gpio, "disp_te");
 		if (rc) {
 			pr_err("request TE gpio failed, rc=%d\n",

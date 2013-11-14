@@ -451,12 +451,12 @@ int map_and_register_buf(struct msm_vidc_inst *inst, struct v4l2_buffer *b)
 			!b->m.planes[i].length) {
 			continue;
 		}
+		mutex_lock(&inst->sync_lock);
 		temp = get_registered_buf(inst, b, i, &plane);
 		if (temp && !is_dynamic_output_buffer_mode(b, inst)) {
 			dprintk(VIDC_DBG,
 				"This memory region has already been prepared\n");
 			rc = -EINVAL;
-			goto exit;
 		}
 
 		if (temp && is_dynamic_output_buffer_mode(b, inst) &&
@@ -471,12 +471,14 @@ int map_and_register_buf(struct msm_vidc_inst *inst, struct v4l2_buffer *b)
 			*/
 			dprintk(VIDC_DBG, "[MAP] Buffer already prepared\n");
 			rc = buf_ref_get(inst, temp);
-			if (rc < 0)
-				return rc;
-			save_v4l2_buffer(b, temp);
-			rc = -EEXIST;
-			goto exit;
+			if (rc > 0) {
+				save_v4l2_buffer(b, temp);
+				rc = -EEXIST;
+			}
 		}
+		mutex_unlock(&inst->sync_lock);
+		if (rc < 0)
+			goto exit;
 
 		temp = get_same_fd_buffer(inst, &inst->registered_bufs,
 					b->m.planes[i].reserved[0], &plane);
@@ -1096,6 +1098,7 @@ void *msm_vidc_open(int core_id, int session_type)
 	INIT_LIST_HEAD(&inst->persistbufs);
 	INIT_LIST_HEAD(&inst->ctrl_clusters);
 	INIT_LIST_HEAD(&inst->registered_bufs);
+	INIT_LIST_HEAD(&inst->outputbufs);
 	init_waitqueue_head(&inst->kernel_event_queue);
 	inst->state = MSM_VIDC_CORE_UNINIT_DONE;
 	inst->core = core;
@@ -1193,6 +1196,17 @@ static void cleanup_instance(struct msm_vidc_inst *inst)
 		}
 		if (!list_empty(&inst->persistbufs)) {
 			list_for_each_safe(ptr, next, &inst->persistbufs) {
+				buf = list_entry(ptr, struct internal_buf,
+						list);
+				list_del(&buf->list);
+				mutex_unlock(&inst->lock);
+				msm_smem_free(inst->mem_client, buf->handle);
+				kfree(buf);
+				mutex_lock(&inst->lock);
+			}
+		}
+		if (!list_empty(&inst->outputbufs)) {
+			list_for_each_safe(ptr, next, &inst->outputbufs) {
 				buf = list_entry(ptr, struct internal_buf,
 						list);
 				list_del(&buf->list);

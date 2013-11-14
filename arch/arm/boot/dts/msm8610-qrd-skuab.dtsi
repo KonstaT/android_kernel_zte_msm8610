@@ -13,6 +13,16 @@
 /include/ "msm8610-qrd.dtsi"
 
 &soc {
+	gpio-leds {
+		compatible = "gpio-leds";
+		status = "disabled";
+
+		gpio_flash: gpio-flash {
+			gpios = <&pm8110_gpios 1 0>;
+			label = "gpio-flash";
+			linux,default-trigger = "gpio_flash_trigger";
+		};
+	};
     sound {
         qcom,model = "msm8x10-skuab-snd-card";
 
@@ -57,6 +67,7 @@
 			goodix,display-coords = <0 0 540 960>;
 			goodix,button-map= <139 102 158>;
 			goodix,product-id = "915";
+			goodix,enable-power-off;
 			goodix,cfg-data0 = [
 				46 1C 02 C0 03 0A 05 11 01 08
 				14 3B 46 32 03 05 00 00 00 00
