@@ -97,8 +97,6 @@ MODULE_PARM_DESC(spkr_drv_wrnd,
 #define TAPAN_SLIM_IRQ_UNDERFLOW (1 << 1)
 #define TAPAN_SLIM_IRQ_PORT_CLOSED (1 << 2)
 
-#define TAPAN_IRQ_MBHC_JACK_SWITCH 21
-
 enum tapan_codec_type {
 	WCD9306,
 	WCD9302,
@@ -3156,13 +3154,27 @@ static void tapan_shutdown(struct snd_pcm_substream *substream,
 		struct snd_soc_dai *dai)
 {
 	struct wcd9xxx *tapan_core = dev_get_drvdata(dai->codec->dev->parent);
+	struct tapan_priv *tapan = snd_soc_codec_get_drvdata(dai->codec);
+	u32 active = 0;
+
 	dev_dbg(dai->codec->dev, "%s(): substream = %s  stream = %d\n",
 		 __func__, substream->name, substream->stream);
+
+	if (dai->id <= NUM_CODEC_DAIS) {
+		if (tapan->dai[dai->id].ch_mask) {
+			active = 1;
+			dev_dbg(dai->codec->dev, "%s(): Codec DAI: chmask[%d] = 0x%lx\n",
+				 __func__, dai->id,
+				 tapan->dai[dai->id].ch_mask);
+		}
+	}
 	if ((tapan_core != NULL) &&
 	    (tapan_core->dev != NULL) &&
-	    (tapan_core->dev->parent != NULL)) {
+	    (tapan_core->dev->parent != NULL) &&
+	    (active == 0)) {
 		pm_runtime_mark_last_busy(tapan_core->dev->parent);
 		pm_runtime_put(tapan_core->dev->parent);
+		dev_dbg(dai->codec->dev, "%s: unvote requested", __func__);
 	}
 }
 
@@ -3922,6 +3934,13 @@ static int tapan_codec_enable_slimrx(struct snd_soc_dapm_widget *w,
 			dev_dbg(codec->dev, "%s: Disconnect RX port, ret = %d\n",
 				 __func__, ret);
 		}
+		if ((core != NULL) &&
+		    (core->dev != NULL) &&
+		    (core->dev->parent != NULL)) {
+			pm_runtime_mark_last_busy(core->dev->parent);
+			pm_runtime_put(core->dev->parent);
+			dev_dbg(codec->dev, "%s: unvote requested", __func__);
+		}
 		break;
 	}
 	return ret;
@@ -3968,6 +3987,13 @@ static int tapan_codec_enable_slimtx(struct snd_soc_dapm_widget *w,
 						      dai->grph);
 			dev_dbg(codec->dev, "%s: Disconnect RX port, ret = %d\n",
 				 __func__, ret);
+		}
+		if ((core != NULL) &&
+		    (core->dev != NULL) &&
+		    (core->dev->parent != NULL)) {
+			pm_runtime_mark_last_busy(core->dev->parent);
+			pm_runtime_put(core->dev->parent);
+			dev_dbg(codec->dev, "%s: unvote requested", __func__);
 		}
 		break;
 	}
@@ -5086,11 +5112,6 @@ static void tapan_codec_specific_cal_setup(struct snd_soc_codec *codec,
 	snd_soc_update_bits(codec, WCD9XXX_A_TX_7_MBHC_EN, 0xE0, 0xE0);
 }
 
-static int tapan_get_jack_detect_irq(struct snd_soc_codec *codec)
-{
-	return TAPAN_IRQ_MBHC_JACK_SWITCH;
-}
-
 static struct wcd9xxx_cfilt_mode tapan_codec_switch_cfilt_mode(
 				 struct wcd9xxx_mbhc *mbhc,
 				 bool fast)
@@ -5114,14 +5135,6 @@ static void tapan_select_cfilt(struct snd_soc_codec *codec,
 			       struct wcd9xxx_mbhc *mbhc)
 {
 	snd_soc_update_bits(codec, mbhc->mbhc_bias_regs.ctl_reg, 0x60, 0x00);
-}
-
-static void tapan_free_irq(struct wcd9xxx_mbhc *mbhc)
-{
-	struct wcd9xxx *wcd9xxx = mbhc->codec->control_data;
-	struct wcd9xxx_core_resource *core_res =
-			&wcd9xxx->core_res;
-	wcd9xxx_free_irq(core_res, WCD9306_IRQ_MBHC_JACK_SWITCH, mbhc);
 }
 
 enum wcd9xxx_cdc_type tapan_get_cdc_type(void)
@@ -5382,10 +5395,8 @@ static const struct wcd9xxx_mbhc_cb mbhc_cb = {
 	.enable_mux_bias_block = tapan_enable_mux_bias_block,
 	.cfilt_fast_mode = tapan_put_cfilt_fast_mode,
 	.codec_specific_cal = tapan_codec_specific_cal_setup,
-	.jack_detect_irq = tapan_get_jack_detect_irq,
 	.switch_cfilt_mode = tapan_codec_switch_cfilt_mode,
 	.select_cfilt = tapan_select_cfilt,
-	.free_irq = tapan_free_irq,
 	.get_cdc_type = tapan_get_cdc_type,
 	.setup_zdet = tapan_setup_zdet,
 	.compute_impedance = tapan_compute_impedance,
@@ -5425,6 +5436,18 @@ static int tapan_device_down(struct wcd9xxx *wcd9xxx)
 
 	return 0;
 }
+
+static const struct wcd9xxx_mbhc_intr cdc_intr_ids = {
+	.poll_plug_rem = WCD9XXX_IRQ_MBHC_REMOVAL,
+	.shortavg_complete = WCD9XXX_IRQ_MBHC_SHORT_TERM,
+	.potential_button_press = WCD9XXX_IRQ_MBHC_PRESS,
+	.button_release = WCD9XXX_IRQ_MBHC_RELEASE,
+	.dce_est_complete = WCD9XXX_IRQ_MBHC_POTENTIAL,
+	.insertion = WCD9XXX_IRQ_MBHC_INSERTION,
+	.hph_left_ocp = WCD9306_IRQ_HPH_PA_OCPL_FAULT,
+	.hph_right_ocp = WCD9306_IRQ_HPH_PA_OCPR_FAULT,
+	.hs_jack_switch = WCD9306_IRQ_MBHC_JACK_SWITCH,
+};
 
 static int tapan_post_reset_cb(struct wcd9xxx *wcd9xxx)
 {
@@ -5473,7 +5496,7 @@ static int tapan_post_reset_cb(struct wcd9xxx *wcd9xxx)
 		rco_clk_rate = TAPAN_MCLK_CLK_9P6MHZ;
 
 	ret = wcd9xxx_mbhc_init(&tapan->mbhc, &tapan->resmgr, codec, NULL,
-				&mbhc_cb, rco_clk_rate,
+				&mbhc_cb, &cdc_intr_ids, rco_clk_rate,
 				TAPAN_CDC_ZDET_SUPPORTED);
 	if (ret)
 		pr_err("%s: mbhc init failed %d\n", __func__, ret);
@@ -5652,7 +5675,8 @@ static int tapan_codec_probe(struct snd_soc_codec *codec)
 	core_res = &wcd9xxx->core_res;
 	pdata = dev_get_platdata(codec->dev->parent);
 	ret = wcd9xxx_resmgr_init(&tapan->resmgr, codec, core_res, pdata,
-				  &tapan_reg_address, WCD9XXX_CDC_TYPE_TAPAN);
+				  &pdata->micbias, &tapan_reg_address,
+				  WCD9XXX_CDC_TYPE_TAPAN);
 	if (ret) {
 		pr_err("%s: wcd9xxx init failed %d\n", __func__, ret);
 		return ret;
@@ -5679,7 +5703,7 @@ static int tapan_codec_probe(struct snd_soc_codec *codec)
 		rco_clk_rate = TAPAN_MCLK_CLK_9P6MHZ;
 
 	ret = wcd9xxx_mbhc_init(&tapan->mbhc, &tapan->resmgr, codec, NULL,
-				&mbhc_cb, rco_clk_rate,
+				&mbhc_cb, &cdc_intr_ids, rco_clk_rate,
 				TAPAN_CDC_ZDET_SUPPORTED);
 
 	if (ret) {

@@ -69,6 +69,7 @@ adreno_ringbuffer_waitspace(struct adreno_ringbuffer *rb,
 	unsigned long wait_time_part;
 	unsigned int prev_reg_val[FT_DETECT_REGS_COUNT];
 	unsigned int rptr;
+	struct adreno_device *adreno_dev = ADRENO_DEVICE(rb->device);
 
 	memset(prev_reg_val, 0, sizeof(prev_reg_val));
 
@@ -107,17 +108,16 @@ adreno_ringbuffer_waitspace(struct adreno_ringbuffer *rb,
 
 		/* Dont wait for timeout, detect hang faster.
 		 */
+
+		if (kgsl_atomic_read(&adreno_dev->hang_intr_set))
+			goto hang_detected;
+
 		if (time_after(jiffies, wait_time_part)) {
 			wait_time_part = jiffies +
 				msecs_to_jiffies(KGSL_TIMEOUT_PART);
-			if ((adreno_ft_detect(rb->device,
-						prev_reg_val))){
-				KGSL_DRV_ERR(rb->device,
-				"Hang detected while waiting for freespace in"
-				"ringbuffer rptr: 0x%x, wptr: 0x%x\n",
-				rptr, rb->wptr);
-				goto err;
-			}
+
+			if ((adreno_ft_detect(rb->device, prev_reg_val)))
+				goto hang_detected;
 		}
 
 		if (time_after(jiffies, wait_time)) {
@@ -128,6 +128,12 @@ adreno_ringbuffer_waitspace(struct adreno_ringbuffer *rb,
 		}
 
 		continue;
+
+hang_detected:
+		KGSL_DRV_ERR(rb->device,
+			"Hang detected while waiting for freespace in"
+			"ringbuffer rptr: 0x%x, wptr: 0x%x\n",
+			rptr, rb->wptr);
 
 err:
 		if (!adreno_dump_and_exec_ft(rb->device)) {
@@ -1073,7 +1079,7 @@ adreno_ringbuffer_issueibcmds(struct kgsl_device_private *dev_priv,
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
 	unsigned int *link = 0;
 	unsigned int *cmds;
-	unsigned int i;
+	unsigned int i, cmdflags;
 	struct adreno_context *drawctxt = NULL;
 	unsigned int start_index = 0;
 	int ret;
@@ -1094,6 +1100,8 @@ adreno_ringbuffer_issueibcmds(struct kgsl_device_private *dev_priv,
 		ret = -EDEADLK;
 		goto done;
 	}
+
+	cmdflags = (flags & KGSL_CMD_FLAGS_EOF);
 
 	/* process any profiling results that are available into the log_buf */
 	adreno_profile_process_results(device);
@@ -1161,7 +1169,7 @@ adreno_ringbuffer_issueibcmds(struct kgsl_device_private *dev_priv,
 
 	if (test_and_clear_bit(ADRENO_DEVICE_PWRON, &adreno_dev->priv) &&
 		test_bit(ADRENO_DEVICE_PWRON_FIXUP, &adreno_dev->priv))
-			flags |= KGSL_CMD_FLAGS_PWRON_FIXUP;
+			cmdflags |= KGSL_CMD_FLAGS_PWRON_FIXUP;
 
 	if (drawctxt->flags & CTXT_FLAGS_USER_GENERATED_TS) {
 		if (timestamp_cmp(drawctxt->timestamp, *timestamp) >= 0) {
@@ -1178,7 +1186,7 @@ adreno_ringbuffer_issueibcmds(struct kgsl_device_private *dev_priv,
 
 	ret = adreno_ringbuffer_addcmds(&adreno_dev->ringbuffer,
 					drawctxt,
-					flags,
+					cmdflags,
 					&link[0], (cmds - link));
 	if (ret)
 		goto done;

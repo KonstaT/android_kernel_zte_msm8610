@@ -711,7 +711,7 @@ static int mdss_mdp_scale_setup(struct mdss_mdp_pipe *pipe)
 			if (src_h <= pipe->dst.h) {
 				scale_config |= /* G/Y, A */
 					(filter_mode << 10) |
-					(MDSS_MDP_SCALE_FILTER_NEAREST << 18);
+					(MDSS_MDP_SCALE_FILTER_BIL << 18);
 			} else
 				scale_config |= /* G/Y, A */
 					(MDSS_MDP_SCALE_FILTER_PCMN << 10) |
@@ -730,7 +730,7 @@ static int mdss_mdp_scale_setup(struct mdss_mdp_pipe *pipe)
 			if (src_h <= pipe->dst.h)
 				scale_config |= /* RGB, A */
 					(MDSS_MDP_SCALE_FILTER_BIL << 10) |
-					(MDSS_MDP_SCALE_FILTER_NEAREST << 18);
+					(MDSS_MDP_SCALE_FILTER_BIL << 18);
 			else
 				scale_config |= /* RGB, A */
 					(MDSS_MDP_SCALE_FILTER_PCMN << 10) |
@@ -764,7 +764,7 @@ static int mdss_mdp_scale_setup(struct mdss_mdp_pipe *pipe)
 			if (src_w <= pipe->dst.w) {
 				scale_config |= /* G/Y, A */
 					(filter_mode << 8) |
-					(MDSS_MDP_SCALE_FILTER_NEAREST << 16);
+					(MDSS_MDP_SCALE_FILTER_BIL << 16);
 			} else
 				scale_config |= /* G/Y, A */
 					(MDSS_MDP_SCALE_FILTER_PCMN << 8) |
@@ -783,7 +783,7 @@ static int mdss_mdp_scale_setup(struct mdss_mdp_pipe *pipe)
 			if (src_w <= pipe->dst.w)
 				scale_config |= /* RGB, A */
 					(MDSS_MDP_SCALE_FILTER_BIL << 8) |
-					(MDSS_MDP_SCALE_FILTER_NEAREST << 16);
+					(MDSS_MDP_SCALE_FILTER_BIL << 16);
 			else
 				scale_config |= /* RGB, A */
 					(MDSS_MDP_SCALE_FILTER_PCMN << 8) |
@@ -1213,7 +1213,7 @@ int mdss_mdp_pp_resume(struct mdss_mdp_ctl *ctl, u32 dspp_num)
 			pp_ad_cfg_write(ad);
 		if (PP_AD_STATE_INIT & ad->state)
 			pp_ad_init_write(ad);
-		if (PP_AD_STATE_DATA & ad->state) {
+		if ((PP_AD_STATE_DATA & ad->state) && (ad->sts & PP_STS_ENABLE)) {
 			bl = ad->bl_mfd->bl_level;
 			ad->last_bl = bl;
 			if (ad->state & PP_AD_STATE_BL_LIN) {

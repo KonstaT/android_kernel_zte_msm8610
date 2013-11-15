@@ -344,6 +344,9 @@ static int kgsl_iommu_fault_handler(struct iommu_domain *domain,
 	device = mmu->device;
 	adreno_dev = ADRENO_DEVICE(device);
 
+	mmu->fault = 1;
+	iommu_dev->fault = 1;
+
 	ptbase = KGSL_IOMMU_GET_CTX_REG(iommu, iommu_unit,
 					iommu_dev->ctx_id, TTBR0);
 
@@ -394,9 +397,6 @@ static int kgsl_iommu_fault_handler(struct iommu_domain *domain,
 
 	}
 
-	mmu->fault = 1;
-	iommu_dev->fault = 1;
-
 	kgsl_sharedmem_readl(&device->memstore, &curr_context_id,
 		KGSL_MEMSTORE_OFFSET(KGSL_MEMSTORE_GLOBAL, current_context));
 
@@ -425,8 +425,10 @@ static int kgsl_iommu_fault_handler(struct iommu_domain *domain,
 	 * the GPU and trigger a snapshot. To stall the transaction return
 	 * EBUSY error.
 	 */
-	if (adreno_dev->ft_pf_policy & KGSL_FT_PAGEFAULT_GPUHALT_ENABLE)
+	if (adreno_dev->ft_pf_policy & KGSL_FT_PAGEFAULT_GPUHALT_ENABLE) {
+		adreno_fatal_err_work(adreno_dev);
 		ret = -EBUSY;
+	}
 done:
 	return ret;
 }
@@ -1803,6 +1805,10 @@ void kgsl_iommu_pagefault_resume(struct kgsl_mmu *mmu)
 						iommu_unit,
 						iommu_unit->dev[j].ctx_id,
 						RESUME, 1);
+					KGSL_IOMMU_SET_CTX_REG(iommu,
+						iommu_unit,
+						iommu_unit->dev[j].ctx_id,
+						FSR, 0);
 					_iommu_unlock(iommu);
 					iommu_unit->dev[j].fault = 0;
 				}
@@ -2046,7 +2052,6 @@ struct kgsl_mmu_ops iommu_ops = {
 	.mmu_setstate = kgsl_iommu_setstate,
 	.mmu_device_setstate = kgsl_iommu_default_setstate,
 	.mmu_pagefault = NULL,
-	.mmu_pagefault_resume = kgsl_iommu_pagefault_resume,
 	.mmu_get_current_ptbase = kgsl_iommu_get_current_ptbase,
 	.mmu_enable_clk = kgsl_iommu_enable_clk,
 	.mmu_disable_clk_on_ts = kgsl_iommu_disable_clk_on_ts,
