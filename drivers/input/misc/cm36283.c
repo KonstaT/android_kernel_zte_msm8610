@@ -674,17 +674,9 @@ static int lightsensor_enable(struct cm36283_info *lpi)
 {
 	int ret = -EIO;
 	unsigned int delay;
-	
-	mutex_lock(&als_enable_mutex);
 
-	if (lpi->als_enable) {
-		dev_err(&lpi->i2c_client->dev, "%s: already enabled\n",
-			       __func__);
-		ret = 0;
-	} else {
-		ret = control_and_report(lpi, CONTROL_ALS, 1, 0);
-	}
-	
+	mutex_lock(&als_enable_mutex);
+	ret = control_and_report(lpi, CONTROL_ALS, 1, 0);
 	mutex_unlock(&als_enable_mutex);
 
 	delay = atomic_read(&lpi->ls_poll_delay);
@@ -1565,7 +1557,7 @@ static int cm36283_probe(struct i2c_client *client,
 		__func__, lpi->ls_cmd);
 	
 	if (pdata->ls_cmd == 0) {
-		lpi->ls_cmd  = CM36283_ALS_IT_160ms | CM36283_ALS_GAIN_2;
+		lpi->ls_cmd  = CM36283_ALS_IT_80ms | CM36283_ALS_GAIN_2;
 	}
 
 	lp_info = lpi;
@@ -1582,17 +1574,17 @@ static int cm36283_probe(struct i2c_client *client,
 	mutex_init(&ps_get_adc_mutex);
 
 
-  //SET LUX STEP FACTOR HERE
-  // if adc raw value one step = 5/100 = 1/20 = 0.05 lux
-  // the following will set the factor 0.05 = 1/20
-  // and lpi->golden_adc = 1;  
-  // set als_kadc = (ALS_CALIBRATED <<16) | 20;
+	/*
+	 * SET LUX STEP FACTOR HERE
+	 * if adc raw value one step = 5/100 = 1/20 = 0.05 lux
+	 * the following will set the factor 0.05 = 1/20
+	 * and lpi->golden_adc = 1;
+	 * set als_kadc = (ALS_CALIBRATED << 16) | 20;
+	 */
 
-  als_kadc = (ALS_CALIBRATED <<16) | 20;
-  lpi->golden_adc = 1;
-
-  //ls calibrate always set to 1 
-  lpi->ls_calibrate = 1;
+	als_kadc = (ALS_CALIBRATED << 16) | 10;
+	lpi->golden_adc = 100;
+	lpi->ls_calibrate = 0;
 
 	lightsensor_set_kvalue(lpi);
 	ret = lightsensor_update_table(lpi);
@@ -2009,27 +2001,40 @@ static int cm36283_suspend(struct device *dev)
 	struct cm36283_info *lpi = lp_info;
 
 	if (lpi->als_enable) {
-		lightsensor_disable(lpi);
+		if (lightsensor_disable(lpi))
+			goto out;
 		lpi->als_enable = 1;
 	}
-	cm36283_power_set(lpi, 0);
+	if (cm36283_power_set(lpi, 0))
+		goto out;
 
 	return 0;
+
+out:
+	dev_err(&lpi->i2c_client->dev, "%s:failed during resume operation.\n",
+			__func__);
+	return -EIO;
 }
 
 static int cm36283_resume(struct device *dev)
 {
 	struct cm36283_info *lpi = lp_info;
 
-	cm36283_power_set(lpi, 1);
+	if (cm36283_power_set(lpi, 1))
+		goto out;
 
 	if (lpi->als_enable) {
-		cm36283_setup(lpi);
-		lightsensor_setup(lpi);
-		psensor_setup(lpi);
-		lightsensor_enable(lpi);
+		ls_initial_cmd(lpi);
+		psensor_initial_cmd(lpi);
+		if (lightsensor_enable(lpi))
+			goto out;
 	}
 	return 0;
+
+out:
+	dev_err(&lpi->i2c_client->dev, "%s:failed during resume operation.\n",
+			__func__);
+	return -EIO;
 }
 #endif
 

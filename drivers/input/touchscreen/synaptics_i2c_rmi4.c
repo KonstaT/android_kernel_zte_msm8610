@@ -67,10 +67,10 @@
 #define F11_STD_CTRL_LEN 10
 #define F11_STD_DATA_LEN 12
 
-#define NORMAL_OPERATION (0 << 0)
-#define SENSOR_SLEEP (1 << 0)
-#define NO_SLEEP_OFF (0 << 2)
-#define NO_SLEEP_ON (1 << 2)
+#define NORMAL_OPERATION 0
+#define SENSOR_SLEEP 1
+#define NO_SLEEP_OFF 0
+#define NO_SLEEP_ON 1
 
 enum device_status {
 	STATUS_NO_ERROR = 0x00,
@@ -110,6 +110,13 @@ static int synaptics_rmi4_i2c_write(struct synaptics_rmi4_data *rmi4_data,
 		unsigned short length);
 
 static int synaptics_rmi4_reset_device(struct synaptics_rmi4_data *rmi4_data);
+
+static void synaptics_rmi4_sensor_wake(struct synaptics_rmi4_data *rmi4_data);
+
+static void synaptics_rmi4_sensor_sleep(struct synaptics_rmi4_data *rmi4_data);
+
+static int synaptics_rmi4_check_configuration(struct synaptics_rmi4_data
+		*rmi4_data);
 
 #ifdef CONFIG_PM
 static int synaptics_rmi4_suspend(struct device *dev);
@@ -2051,6 +2058,30 @@ static int synaptics_rmi4_query_device_info(
 	return 0;
 }
 
+/*
+* This function checks whether the fhandler already existis in the
+* support_fn_list or not.
+* If it exists then return 1 as found or return 0 as not found.
+*
+* Called by synaptics_rmi4_query_device().
+*/
+static int synaptics_rmi4_check_fn_list(struct synaptics_rmi4_data *rmi4_data,
+				struct synaptics_rmi4_fn *fhandler)
+{
+	int found = 0;
+	struct synaptics_rmi4_fn *new_fhandler;
+	struct synaptics_rmi4_device_info *rmi;
+
+	rmi = &(rmi4_data->rmi4_mod_info);
+
+	if (!list_empty(&rmi->support_fn_list))
+		list_for_each_entry(new_fhandler, &rmi->support_fn_list, link)
+			if (new_fhandler->fn_number == fhandler->fn_number)
+				found = 1;
+
+	return found;
+}
+
  /**
  * synaptics_rmi4_query_device()
  *
@@ -2066,7 +2097,7 @@ static int synaptics_rmi4_query_device_info(
  */
 static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
 {
-	int retval;
+	int retval, found;
 	unsigned char ii;
 	unsigned char page_number;
 	unsigned char intr_count = 0;
@@ -2079,8 +2110,6 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
 	struct synaptics_rmi4_device_info *rmi;
 
 	rmi = &(rmi4_data->rmi4_mod_info);
-
-	INIT_LIST_HEAD(&rmi->support_fn_list);
 
 	/* Scan the page description tables of the pages to service */
 	for (page_number = 0; page_number < PAGES_TO_SERVICE; page_number++) {
@@ -2096,7 +2125,7 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
 				return retval;
 
 			fhandler = NULL;
-
+			found = 0;
 			if (rmi_fd.fn_number == 0) {
 				dev_dbg(&rmi4_data->i2c_client->dev,
 						"%s: Reached end of PDT\n",
@@ -2215,8 +2244,28 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
 			intr_count += (rmi_fd.intr_src_count & MASK_3BIT);
 
 			if (fhandler && rmi_fd.intr_src_count) {
-				list_add_tail(&fhandler->link,
+				/* Want to check whether the fhandler already
+				exists in the support_fn_list or not.
+				If not found then add it to the list, otherwise
+				free the memory allocated to it.
+				*/
+				found = synaptics_rmi4_check_fn_list(rmi4_data,
+						fhandler);
+
+				if (!found) {
+					list_add_tail(&fhandler->link,
 						&rmi->support_fn_list);
+				} else {
+					if (fhandler->fn_number ==
+							SYNAPTICS_RMI4_F1A)
+						synaptics_rmi4_f1a_kfree(
+							fhandler);
+					else {
+						kfree(fhandler->data);
+						kfree(fhandler->extra);
+					}
+					kfree(fhandler);
+				}
 			}
 		}
 	}
@@ -2851,6 +2900,8 @@ static int __devinit synaptics_rmi4_probe(struct i2c_client *client,
 	init_waitqueue_head(&rmi4_data->wait);
 	mutex_init(&(rmi4_data->rmi4_io_ctrl_mutex));
 
+	INIT_LIST_HEAD(&rmi->support_fn_list);
+
 	retval = synaptics_rmi4_query_device(rmi4_data);
 	if (retval < 0) {
 		dev_err(&client->dev,
@@ -2987,12 +3038,21 @@ static int __devinit synaptics_rmi4_probe(struct i2c_client *client,
 			goto err_sysfs;
 		}
 	}
+
+	synaptics_rmi4_sensor_wake(rmi4_data);
+
 	retval = synaptics_rmi4_irq_enable(rmi4_data, true);
 	if (retval < 0) {
 		dev_err(&client->dev,
 			"%s: Failed to enable attention interrupt\n",
 			__func__);
 		goto err_sysfs;
+	}
+
+	retval = synaptics_rmi4_check_configuration(rmi4_data);
+	if (retval < 0) {
+		dev_err(&client->dev, "Failed to check configuration\n");
+		return retval;
 	}
 
 	return retval;
@@ -3172,6 +3232,12 @@ static void synaptics_rmi4_sensor_wake(struct synaptics_rmi4_data *rmi4_data)
 				"%s: Failed to wake from sleep mode\n",
 				__func__);
 		rmi4_data->sensor_sleep = true;
+		return;
+	}
+
+	if (device_ctrl.nosleep == NO_SLEEP_OFF &&
+		device_ctrl.sleep_mode == NORMAL_OPERATION) {
+		rmi4_data->sensor_sleep = false;
 		return;
 	}
 
@@ -3558,6 +3624,22 @@ static const struct dev_pm_ops synaptics_rmi4_dev_pm_ops = {
 static const struct dev_pm_ops synaptics_rmi4_dev_pm_ops = {
 };
 #endif
+#else
+static void synaptics_rmi4_sensor_wake(struct synaptics_rmi4_data *rmi4_data)
+{
+	return;
+};
+
+static void synaptics_rmi4_sensor_sleep(struct synaptics_rmi4_data *rmi4_data)
+{
+	return;
+};
+
+static int synaptics_rmi4_check_configuration(struct synaptics_rmi4_data
+						*rmi4_data)
+{
+	return 0;
+};
 #endif
 
 static const struct i2c_device_id synaptics_rmi4_id_table[] = {
