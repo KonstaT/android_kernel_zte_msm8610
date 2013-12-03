@@ -77,7 +77,7 @@ void msm_dsi_ack_err_status(unsigned char *ctrl_base)
 
 	if (status) {
 		MIPI_OUTP(ctrl_base + DSI_ACK_ERR_STATUS, status);
-		pr_debug("%s: status=%x\n", __func__, status);
+		pr_err("%s: status=%x\n", __func__, status);
 	}
 }
 
@@ -88,7 +88,7 @@ void msm_dsi_timeout_status(unsigned char *ctrl_base)
 	status = MIPI_INP(ctrl_base + DSI_TIMEOUT_STATUS);
 	if (status & 0x0111) {
 		MIPI_OUTP(ctrl_base + DSI_TIMEOUT_STATUS, status);
-		pr_debug("%s: status=%x\n", __func__, status);
+		pr_err("%s: status=%x\n", __func__, status);
 	}
 }
 
@@ -100,7 +100,7 @@ void msm_dsi_dln0_phy_err(unsigned char *ctrl_base)
 
 	if (status & 0x011111) {
 		MIPI_OUTP(ctrl_base + DSI_DLN0_PHY_ERR, status);
-		pr_debug("%s: status=%x\n", __func__, status);
+		pr_err("%s: status=%x\n", __func__, status);
 	}
 }
 
@@ -112,7 +112,7 @@ void msm_dsi_fifo_status(unsigned char *ctrl_base)
 
 	if (status & 0x44444489) {
 		MIPI_OUTP(ctrl_base + DSI_FIFO_STATUS, status);
-		pr_debug("%s: status=%x\n", __func__, status);
+		pr_err("%s: status=%x\n", __func__, status);
 	}
 }
 
@@ -124,7 +124,7 @@ void msm_dsi_status(unsigned char *ctrl_base)
 
 	if (status & 0x80000000) {
 		MIPI_OUTP(ctrl_base + DSI_STATUS, status);
-		pr_debug("%s: status=%x\n", __func__, status);
+		pr_err("%s: status=%x\n", __func__, status);
 	}
 }
 
@@ -546,7 +546,12 @@ int msm_dsi_cmds_tx(struct mdss_panel_data *pdata,
 	cm = cmds;
 	for (i = 0; i < cnt; i++) {
 		dsi_buf_init(tp);
-		dsi_cmd_dma_add(tp, cm);
+		rc = dsi_cmd_dma_add(tp, cm);
+		if (!rc) {
+			pr_err("%s: dsi_cmd_dma_add fail\n", __func__);
+			rc = -EINVAL;
+			break;
+		}
 		rc = msm_dsi_cmd_dma_tx(tp);
 		if (IS_ERR_VALUE(rc)) {
 			pr_err("%s: failed to call cmd_dma_tx\n", __func__);
@@ -634,27 +639,35 @@ int msm_dsi_cmds_rx(struct mdss_panel_data *pdata,
 		pkt_size = len;
 		max_pktsize[0] = pkt_size;
 		dsi_buf_init(tp);
-		dsi_cmd_dma_add(tp, pkt_size_cmd);
+		rc = dsi_cmd_dma_add(tp, pkt_size_cmd);
+		if (!rc) {
+			pr_err("%s: dsi_cmd_dma_add failed\n", __func__);
+			rp->len = 0;
+			goto msm_dsi_cmds_rx_err;
+		}
 		rc = msm_dsi_cmd_dma_tx(tp);
 		if (IS_ERR_VALUE(rc)) {
-			msm_dsi_disable_irq();
-			pr_err("%s: dma_tx failed\n", __func__);
+			pr_err("%s: msm_dsi_cmd_dma_tx failed\n", __func__);
 			rp->len = 0;
-			goto end;
+			goto msm_dsi_cmds_rx_err;
 		}
 		pr_debug("%s: Max packet size sent\n", __func__);
 	}
 
 	dsi_buf_init(tp);
-	dsi_cmd_dma_add(tp, cmds);
+	rc = dsi_cmd_dma_add(tp, cmds);
+	if (!rc) {
+		pr_err("%s: dsi_cmd_dma_add failed\n", __func__);
+		rp->len = 0;
+		goto msm_dsi_cmds_rx_err;
+	}
 
 	/* transmit read comamnd to client */
-	msm_dsi_cmd_dma_tx(tp);
+	rc = msm_dsi_cmd_dma_tx(tp);
 	if (IS_ERR_VALUE(rc)) {
-		msm_dsi_disable_irq();
-		pr_err("%s: dma_tx failed\n", __func__);
+		pr_err("%s: msm_dsi_cmd_dma_tx failed\n", __func__);
 		rp->len = 0;
-		goto end;
+		goto msm_dsi_cmds_rx_err;
 	}
 	/*
 	 * once cmd_dma_done interrupt received,
@@ -672,8 +685,6 @@ int msm_dsi_cmds_rx(struct mdss_panel_data *pdata,
 
 	msm_dsi_cmd_dma_rx(rp, cnt);
 
-	msm_dsi_disable_irq();
-
 	if (pdata->panel_info.mipi.no_max_pkt_size) {
 		/*
 		 * remove extra 2 bytes from previous
@@ -689,6 +700,7 @@ int msm_dsi_cmds_rx(struct mdss_panel_data *pdata,
 	switch (cmd) {
 	case DTYPE_ACK_ERR_RESP:
 		pr_debug("%s: rx ACK_ERR_PACLAGE\n", __func__);
+		rp->len = 0;
 		break;
 	case DTYPE_GEN_READ1_RESP:
 	case DTYPE_DCS_READ1_RESP:
@@ -705,14 +717,17 @@ int msm_dsi_cmds_rx(struct mdss_panel_data *pdata,
 		rp->len -= diff; /* align bytes */
 		break;
 	default:
-		pr_debug("%s: Unknown cmd received\n", __func__);
+		pr_warn("%s: Unknown cmd received\n", __func__);
+		rp->len = 0;
 		break;
 	}
 
 	if (video_mode)
 		MIPI_OUTP(ctrl_base + DSI_CTRL,
 					dsi_ctrl); /* restore */
-end:
+
+msm_dsi_cmds_rx_err:
+	msm_dsi_disable_irq();
 	return rp->len;
 }
 
@@ -1070,6 +1085,27 @@ static struct device_node *dsi_find_panel_of_node(
 	return dsi_pan_node;
 }
 
+static int msm_dsi_clk_ctrl(struct mdss_panel_data *pdata, int enable)
+{
+	u32 bitclk_rate = 0, byteclk_rate = 0, pclk_rate = 0, dsiclk_rate = 0;
+
+	pr_debug("%s:\n", __func__);
+
+	if (enable) {
+		msm_dsi_ahb_ctrl(1);
+		msm_dsi_cal_clk_rate(pdata, &bitclk_rate, &dsiclk_rate,
+					&byteclk_rate, &pclk_rate);
+		msm_dsi_clk_set_rate(DSI_ESC_CLK_RATE, dsiclk_rate,
+					byteclk_rate, pclk_rate);
+		msm_dsi_clk_enable();
+	} else {
+		msm_dsi_clk_set_rate(DSI_ESC_CLK_RATE, 0, 0, 0);
+		msm_dsi_clk_disable();
+		msm_dsi_ahb_ctrl(0);
+	}
+	return 0;
+}
+
 static int __devinit msm_dsi_probe(struct platform_device *pdev)
 {
 	struct dsi_interface intf;
@@ -1188,6 +1224,7 @@ static int __devinit msm_dsi_probe(struct platform_device *pdev)
 	intf.on = msm_dsi_on;
 	intf.off = msm_dsi_off;
 	intf.cont_on = msm_dsi_cont_on;
+	intf.clk_ctrl = msm_dsi_clk_ctrl;
 	intf.op_mode_config = msm_dsi_op_mode_config;
 	intf.tx = msm_dsi_cmds_tx;
 	intf.rx = msm_dsi_cmds_rx;

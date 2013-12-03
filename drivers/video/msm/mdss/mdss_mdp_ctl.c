@@ -974,6 +974,8 @@ int mdss_mdp_ctl_split_display_setup(struct mdss_mdp_ctl *ctl,
 
 	mixer->width = sctl->width;
 	mixer->height = sctl->height;
+	mixer->roi = (struct mdss_mdp_img_rect)
+				{0, 0, mixer->width, mixer->height};
 	sctl->mixer_left = mixer;
 
 	return mdss_mdp_set_split_ctl(ctl, sctl);
@@ -1560,9 +1562,17 @@ int mdss_mdp_ctl_addr_setup(struct mdss_data_type *mdata,
 struct mdss_mdp_mixer *mdss_mdp_mixer_get(struct mdss_mdp_ctl *ctl, int mux)
 {
 	struct mdss_mdp_mixer *mixer = NULL;
-	struct mdss_overlay_private *mdp5_data = mfd_to_mdp5_data(ctl->mfd);
-	if (!ctl)
+	struct mdss_overlay_private *mdp5_data = NULL;
+	if (!ctl || !ctl->mfd) {
+		pr_err("ctl not initialized\n");
 		return NULL;
+	}
+
+	mdp5_data = mfd_to_mdp5_data(ctl->mfd);
+	if (!mdp5_data) {
+		pr_err("ctl not initialized\n");
+		return NULL;
+	}
 
 	switch (mux) {
 	case MDSS_MDP_MIXER_MUX_DEFAULT:

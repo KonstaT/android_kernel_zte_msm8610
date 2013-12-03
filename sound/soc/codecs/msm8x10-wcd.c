@@ -2582,6 +2582,8 @@ static const struct msm8x10_wcd_reg_mask_val
 	 */
 	{MSM8X10_WCD_A_RX_HPH_OCP_CTL, 0xE1, 0x61},
 	{MSM8X10_WCD_A_RX_COM_OCP_COUNT, 0xFF, 0xFF},
+	{MSM8X10_WCD_A_RX_HPH_L_TEST, 0x01, 0x01},
+	{MSM8X10_WCD_A_RX_HPH_R_TEST, 0x01, 0x01},
 
 	/* Initialize gain registers to use register gain */
 	{MSM8X10_WCD_A_RX_HPH_L_GAIN, 0x20, 0x20},
@@ -3007,10 +3009,21 @@ static struct regulator *wcd8x10_wcd_codec_find_regulator(
 
 	return NULL;
 }
+static int msm8x10_wcd_device_down(struct snd_soc_codec *codec)
+{
+	dev_dbg(codec->dev, "%s: device down!\n", __func__);
+
+	snd_soc_card_change_online_state(codec->card, 0);
+	return 0;
+}
 
 static int msm8x10_wcd_device_up(struct snd_soc_codec *codec)
 {
-	pr_debug("%s: device up!\n", __func__);
+	dev_dbg(codec->dev, "%s: device up!\n", __func__);
+
+	snd_soc_card_change_online_state(codec->card, 1);
+	/* delay is required to make sure sound card state updated */
+	usleep_range(5000, 5100);
 
 	mutex_lock(&codec->mutex);
 
@@ -3029,7 +3042,9 @@ static int adsp_state_callback(struct notifier_block *nb, unsigned long value,
 	bool timedout;
 	unsigned long timeout;
 
-	if (value == SUBSYS_AFTER_POWERUP) {
+	if (value == SUBSYS_BEFORE_SHUTDOWN)
+		msm8x10_wcd_device_down(registered_codec);
+	else if (value == SUBSYS_AFTER_POWERUP) {
 		pr_debug("%s: ADSP is about to power up. bring up codec\n",
 			 __func__);
 
