@@ -504,6 +504,9 @@ static int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
 	} else {
 		pipe->overfetch_disable = 0;
 	}
+	pipe->overfetch_disable = fmt->is_yuv &&
+			!(pipe->flags & MDP_SOURCE_ROTATED_90);
+	pipe->bg_color = req->bg_color;
 
 	req->id = pipe->ndx;
 	pipe->req_data = *req;
@@ -562,10 +565,14 @@ static int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
 
 	if ((pipe->flags & MDP_DEINTERLACE) && !pipe->scale.enable_pxl_ext) {
 		if (pipe->flags & MDP_SOURCE_ROTATED_90) {
+			pipe->src.x = DIV_ROUND_UP(pipe->src.x, 2);
+			pipe->src.x &= ~1;
 			pipe->src.w /= 2;
 			pipe->img_width /= 2;
 		} else {
 			pipe->src.h /= 2;
+			pipe->src.y = DIV_ROUND_UP(pipe->src.y, 2);
+			pipe->src.y &= ~1;
 		}
 	}
 
@@ -596,6 +603,7 @@ static int mdss_mdp_overlay_pipe_setup(struct msm_fb_data_type *mfd,
 	}
 
 	pipe->params_changed++;
+	pipe->has_buf = 0;
 
 	req->vert_deci = pipe->vert_deci;
 
@@ -1027,8 +1035,9 @@ int mdss_mdp_overlay_kickoff(struct msm_fb_data_type *mfd,
 		} else if (pipe->front_buf.num_planes) {
 			buf = &pipe->front_buf;
 		} else {
-			pr_warn("pipe queue w/o buffer\n");
-			continue;
+			pr_debug("no buf detected pnum=%d use solid fill\n",
+					pipe->num);
+			buf = NULL;
 		}
 
 		ret = mdss_mdp_pipe_queue_data(pipe, buf);
@@ -1153,11 +1162,13 @@ done:
 /**
  * mdss_mdp_overlay_release_all() - release any overlays associated with fb dev
  * @mfd:	Msm frame buffer structure associated with fb device
+ * @release_all: ignore pid and release all the pipes
  *
  * Release any resources allocated by calling process, this can be called
  * on fb_release to release any overlays/rotator sessions left open.
  */
-static int __mdss_mdp_overlay_release_all(struct msm_fb_data_type *mfd)
+static int __mdss_mdp_overlay_release_all(struct msm_fb_data_type *mfd,
+	bool release_all)
 {
 	struct mdss_mdp_pipe *pipe;
 	struct mdss_mdp_rotator_session *rot, *tmp;
@@ -1171,7 +1182,7 @@ static int __mdss_mdp_overlay_release_all(struct msm_fb_data_type *mfd)
 	mutex_lock(&mdp5_data->ov_lock);
 	mutex_lock(&mfd->lock);
 	list_for_each_entry(pipe, &mdp5_data->pipes_used, used_list) {
-		if (!mfd->ref_cnt || (pipe->pid == pid)) {
+		if (release_all || (pipe->pid == pid)) {
 			unset_ndx |= pipe->ndx;
 			cnt++;
 		}
@@ -1182,6 +1193,9 @@ static int __mdss_mdp_overlay_release_all(struct msm_fb_data_type *mfd)
 			mfd->index);
 		cnt++;
 	}
+
+	pr_debug("release_all=%d mfd->ref_cnt=%d unset_ndx=0x%x cnt=%d\n",
+		release_all, mfd->ref_cnt, unset_ndx, cnt);
 
 	mutex_unlock(&mfd->lock);
 
@@ -1251,6 +1265,7 @@ static int mdss_mdp_overlay_queue(struct msm_fb_data_type *mfd,
 	if (IS_ERR_VALUE(ret)) {
 		pr_err("src_data pmem error\n");
 	}
+	pipe->has_buf = 1;
 	mdss_mdp_pipe_unmap(pipe);
 
 	return ret;
@@ -1493,6 +1508,7 @@ static void mdss_mdp_overlay_pan_display(struct msm_fb_data_type *mfd)
 	buf->p[0].addr += offset;
 	buf->p[0].len = fbi->fix.smem_len - offset;
 	buf->num_planes = 1;
+	pipe->has_buf = 1;
 	mdss_mdp_pipe_unmap(pipe);
 
 	if (fbi->var.xres > MAX_MIXER_WIDTH || mfd->split_display) {
@@ -1507,6 +1523,7 @@ static void mdss_mdp_overlay_pan_display(struct msm_fb_data_type *mfd)
 			goto pan_display_error;
 		}
 		pipe->back_buf = *buf;
+		pipe->has_buf = 1;
 		mdss_mdp_pipe_unmap(pipe);
 	}
 	mutex_unlock(&mdp5_data->ov_lock);

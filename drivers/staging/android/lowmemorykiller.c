@@ -40,6 +40,7 @@
 #include <linux/mutex.h>
 #include <linux/delay.h>
 #include <linux/swap.h>
+#include <linux/fs.h>
 #include <linux/kobject.h>
 #include <linux/slab.h>
 
@@ -237,8 +238,14 @@ static int get_free_ram(int *other_free, int *other_file,
 		             struct shrink_control *sc)
 {
 	*other_free = global_page_state(NR_FREE_PAGES);
-	*other_file = global_page_state(NR_FILE_PAGES) -
-						global_page_state(NR_SHMEM);
+
+	if (global_page_state(NR_SHMEM) + total_swapcache_pages <
+		global_page_state(NR_FILE_PAGES))
+		*other_file = global_page_state(NR_FILE_PAGES) -
+						global_page_state(NR_SHMEM) -
+						total_swapcache_pages;
+	else
+		*other_file = 0;
 
 	tune_lmk_param(other_free, other_file, sc);
 
@@ -379,7 +386,7 @@ static struct shrinker lowmem_shrinker = {
 
 static void lowmem_notify_killzone_approach(void)
 {
-	lowmem_print(3, "notification trigger activated\n");
+	lowmem_print(5, "notification trigger activated\n");
 	sysfs_notify(lowmem_notify_kobj, NULL,
 			"notify_trigger_active");
 }
