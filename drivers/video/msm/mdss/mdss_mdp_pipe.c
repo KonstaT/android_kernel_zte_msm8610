@@ -166,7 +166,7 @@ int mdss_mdp_smp_reserve(struct mdss_mdp_pipe *pipe)
 	struct mdss_mdp_plane_sizes ps;
 	int i;
 	int rc = 0, rot_mode = 0;
-	u32 nlines;
+	u32 nlines, format;
 	u16 width;
 
 	width = pipe->src.w >> pipe->horz_deci;
@@ -179,8 +179,25 @@ int mdss_mdp_smp_reserve(struct mdss_mdp_pipe *pipe)
 		pr_debug("BWC SMP strides ystride0=%x ystride1=%x\n",
 			ps.ystride[0], ps.ystride[1]);
 	} else {
-		rc = mdss_mdp_get_plane_sizes(pipe->src_fmt->format,
-			width, pipe->src.h, &ps, 0);
+		format = pipe->src_fmt->format;
+		/*
+		 * when decimation block is present, all chroma planes
+		 * are fetched on a single SMP plane for chroma pixels
+		 */
+		if (mdata->has_decimation) {
+			switch (pipe->src_fmt->chroma_sample) {
+			case MDSS_MDP_CHROMA_H2V1:
+				format = MDP_Y_CRCB_H2V1;
+				break;
+			case MDSS_MDP_CHROMA_420:
+				format = MDP_Y_CBCR_H2V2;
+				break;
+			default:
+				break;
+			}
+		}
+		rc = mdss_mdp_get_plane_sizes(format, width, pipe->src.h,
+			&ps, 0);
 		if (rc)
 			return rc;
 
@@ -190,15 +207,6 @@ int mdss_mdp_smp_reserve(struct mdss_mdp_pipe *pipe)
 			ps.ystride[0] = MAX_BPP *
 				max(pipe->mixer->width, width);
 		} else if (mdata->has_decimation) {
-			/*
-			 * when decimation block is used, all chroma planes
-			 * are fetched on a single SMP plane for chroma pixels
-			 */
-			if (ps.num_planes == 3) {
-				ps.num_planes = 2;
-				ps.ystride[1] += ps.ystride[2];
-			}
-
 			/*
 			 * To avoid quailty loss, MDP does one less decimation
 			 * on chroma components if they are subsampled.
@@ -924,6 +932,8 @@ static int mdss_mdp_pipe_solidfill_setup(struct mdss_mdp_pipe *pipe)
 	secure = (pipe->flags & MDP_SECURE_OVERLAY_SESSION ? 0xF : 0x0);
 
 	mdss_mdp_pipe_write(pipe, MDSS_MDP_REG_SSPP_SRC_FORMAT, format);
+	mdss_mdp_pipe_write(pipe, MDSS_MDP_REG_SSPP_SRC_CONSTANT_COLOR,
+		pipe->bg_color);
 	mdss_mdp_pipe_write(pipe, MDSS_MDP_REG_SSPP_SRC_ADDR_SW_STATUS, secure);
 
 	return 0;
@@ -962,7 +972,8 @@ int mdss_mdp_pipe_queue_data(struct mdss_mdp_pipe *pipe,
 			 (pipe->mixer->type == MDSS_MDP_MIXER_TYPE_WRITEBACK)
 			 && (ctl->mdata->mixer_switched)) ||
 			 ctl->roi_changed;
-	if (src_data == NULL) {
+	if (src_data == NULL || !pipe->has_buf) {
+		pipe->params_changed = 0;
 		mdss_mdp_pipe_solidfill_setup(pipe);
 		goto update_nobuf;
 	}
