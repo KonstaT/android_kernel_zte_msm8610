@@ -88,7 +88,7 @@ struct iris_device {
 
 	struct radio_hci_dev *fm_hdev;
 
-	struct v4l2_capability *g_cap;
+	struct v4l2_capability g_cap;
 	struct v4l2_control *g_ctl;
 
 	struct hci_fm_mute_mode_req mute_mode;
@@ -1825,7 +1825,7 @@ static void hci_cc_feature_list_rsp(struct radio_hci_dev *hdev,
 		return;
 	}
 
-	v4l_cap = radio->g_cap;
+	v4l_cap = &radio->g_cap;
 
 	if (rsp->status)
 		return;
@@ -3625,13 +3625,21 @@ static int iris_vidioc_s_ctrl(struct file *file, void *priv,
 		break;
 	case V4L2_CID_PRIVATE_IRIS_RIVA_POKE:
 		if (radio->riva_data_req.cmd_params.length <= MAX_RIVA_PEEK_RSP_SIZE) {
-			memcpy(radio->riva_data_req.data, (void *)ctrl->value,
+			retval = copy_from_user(radio->riva_data_req.data,
+						(void *)ctrl->value,
 						radio->riva_data_req.cmd_params.length);
-			radio->riva_data_req.cmd_params.subopcode = RIVA_POKE_OPCODE;
-			retval = hci_poke_data(&radio->riva_data_req , radio->fm_hdev);
+			if (retval == 0) {
+				radio->riva_data_req.cmd_params.subopcode =
+									RIVA_POKE_OPCODE;
+				retval = hci_poke_data(&radio->riva_data_req,
+							radio->fm_hdev);
+			} else {
+				retval = -EINVAL;
+			}
 		} else {
 			FMDERR("Can not copy into driver's buffer. Length %d is more than"
-			 "the buffer size %d\n", ctrl->value, MAX_RIVA_PEEK_RSP_SIZE);
+			 "the buffer size %d\n", radio->riva_data_req.cmd_params.length,
+				MAX_RIVA_PEEK_RSP_SIZE);
 			retval = -EINVAL;
 		}
 		break;
@@ -4300,8 +4308,12 @@ static int iris_vidioc_querycap(struct file *file, void *priv,
 	}
 	strlcpy(capability->driver, DRIVER_NAME, sizeof(capability->driver));
 	strlcpy(capability->card, DRIVER_CARD, sizeof(capability->card));
-	capability->capabilities = V4L2_CAP_TUNER | V4L2_CAP_RADIO;
-	radio->g_cap = capability;
+
+	strlcpy(radio->g_cap.driver, DRIVER_NAME, sizeof(radio->g_cap.driver));
+	strlcpy(radio->g_cap.card, DRIVER_CARD, sizeof(radio->g_cap.card));
+
+	radio->g_cap.capabilities = V4L2_CAP_TUNER | V4L2_CAP_RADIO;
+	capability->capabilities = radio->g_cap.capabilities;
 	return 0;
 }
 
