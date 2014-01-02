@@ -317,6 +317,7 @@ unsigned int regmap_blsp[UART_DM_LAST] = {
 		[UART_DM_TXFS] = 0x4c,
 		[UART_DM_RXFS] = 0x50,
 		[UART_DM_RX_TRANS_CTRL] = 0xcc,
+		[UART_DM_BCR] = 0xc8,
 };
 
 static struct of_device_id msm_hs_match_table[] = {
@@ -432,17 +433,16 @@ static int msm_hs_clock_vote(struct msm_hs_port *msm_uport)
 
 static void msm_hs_clock_unvote(struct msm_hs_port *msm_uport)
 {
-	int rc = atomic_dec_return(&msm_uport->clk_count);
+	int rc = atomic_read(&msm_uport->clk_count);
 
-	if (rc < 0) {
-		msm_hs_bus_voting(msm_uport, BUS_RESET);
+	if (rc <= 0) {
 		WARN(rc, "msm_uport->clk_count < 0!");
 		dev_err(msm_uport->uport.dev,
-			"%s: Clocks count invalid  [%d]\n", __func__,
-			atomic_read(&msm_uport->clk_count));
+			"%s: Clocks count invalid  [%d]\n", __func__, rc);
 		return;
 	}
 
+	rc = atomic_dec_return(&msm_uport->clk_count);
 	if (0 == rc) {
 		msm_hs_bus_voting(msm_uport, BUS_RESET);
 		/* Turn off the core clk and iface clk*/
@@ -2488,6 +2488,11 @@ static int msm_hs_startup(struct uart_port *uport)
 		}
 	}
 
+	data = (UARTDM_BCR_TX_BREAK_DISABLE | UARTDM_BCR_STALE_IRQ_EMPTY |
+		UARTDM_BCR_RX_DMRX_LOW_EN | UARTDM_BCR_RX_STAL_IRQ_DMRX_EQL |
+		UARTDM_BCR_RX_DMRX_1BYTE_RES_EN);
+	msm_hs_write(uport, UART_DM_BCR, data);
+
 	/* Set auto RFR Level */
 	data = msm_hs_read(uport, UART_DM_MR1);
 	data &= ~UARTDM_MR1_AUTO_RFR_LEVEL1_BMSK;
@@ -3049,6 +3054,7 @@ static int __devinit msm_hs_probe(struct platform_device *pdev)
 	int core_irqres, bam_irqres, wakeup_irqres;
 	struct msm_serial_hs_platform_data *pdata = pdev->dev.platform_data;
 	const struct of_device_id *match;
+	unsigned long data;
 
 	if (pdev->dev.of_node) {
 		dev_dbg(&pdev->dev, "device tree enabled\n");
@@ -3108,32 +3114,31 @@ static int __devinit msm_hs_probe(struct platform_device *pdev)
 	if (is_blsp_uart(msm_uport)) {
 		core_resource = platform_get_resource_byname(pdev,
 					IORESOURCE_MEM, "core_mem");
-		bam_resource = platform_get_resource_byname(pdev,
-					IORESOURCE_MEM, "bam_mem");
-		core_irqres = platform_get_irq_byname(pdev, "core_irq");
-		bam_irqres = platform_get_irq_byname(pdev, "bam_irq");
-		wakeup_irqres = platform_get_irq_byname(pdev, "wakeup_irq");
-
 		if (!core_resource) {
 			MSM_HS_ERR("Invalid core HSUART Resources.\n");
 			return -ENXIO;
 		}
-
+		bam_resource = platform_get_resource_byname(pdev,
+					IORESOURCE_MEM, "bam_mem");
 		if (!bam_resource) {
 			MSM_HS_ERR("Invalid BAM HSUART Resources.\n");
 			return -ENXIO;
 		}
-
-		if (!core_irqres) {
+		core_irqres = platform_get_irq_byname(pdev, "core_irq");
+		if (core_irqres < 0) {
 			MSM_HS_ERR("Invalid core irqres Resources.\n");
 			return -ENXIO;
 		}
-		if (!bam_irqres) {
+		bam_irqres = platform_get_irq_byname(pdev, "bam_irq");
+		if (bam_irqres < 0) {
 			MSM_HS_ERR("Invalid bam irqres Resources.\n");
 			return -ENXIO;
 		}
-		if (!wakeup_irqres)
+		wakeup_irqres = platform_get_irq_byname(pdev, "wakeup_irq");
+		if (wakeup_irqres < 0) {
+			wakeup_irqres = -1;
 			MSM_HS_DBG("Wakeup irq not specified.\n");
+		}
 
 		uport->mapbase = core_resource->start;
 
@@ -3196,11 +3201,6 @@ static int __devinit msm_hs_probe(struct platform_device *pdev)
 		msm_uport->wakeup.ignore = 1;
 		msm_uport->wakeup.inject_rx = pdata->inject_rx_on_wakeup;
 		msm_uport->wakeup.rx_to_inject = pdata->rx_to_inject;
-
-		if (unlikely(msm_uport->wakeup.irq < 0)) {
-			ret = -ENXIO;
-			goto deregister_bus_client;
-		}
 
 		if (is_blsp_uart(msm_uport)) {
 			msm_uport->bam_tx_ep_pipe_index =
@@ -3302,6 +3302,17 @@ static int __devinit msm_hs_probe(struct platform_device *pdev)
 	 * configuration makes sure that issued cmd to CR register gets complete
 	 * before next issued cmd start. Hence mb() requires here.
 	 */
+	mb();
+
+	/*
+	* Set RX_BREAK_ZERO_CHAR_OFF and RX_ERROR_CHAR_OFF
+	* so any rx_break and character having parity of framing
+	* error don't enter inside UART RX FIFO.
+	*/
+	data = msm_hs_read(uport, UART_DM_MR2);
+	data |= (UARTDM_MR2_RX_BREAK_ZERO_CHAR_OFF |
+			UARTDM_MR2_RX_ERROR_CHAR_OFF);
+	msm_hs_write(uport, UART_DM_MR2, data);
 	mb();
 
 	msm_uport->clk_state = MSM_HS_CLK_PORT_OFF;
@@ -3454,12 +3465,12 @@ static void msm_hs_shutdown(struct uart_port *uport)
 	 */
 	mb();
 
+	msm_hs_clock_unvote(msm_uport);
 	if (msm_uport->clk_state != MSM_HS_CLK_OFF) {
 		/* to balance clk_state */
 		msm_hs_clock_unvote(msm_uport);
 		wake_unlock(&msm_uport->dma_wake_lock);
 	}
-	msm_hs_clock_unvote(msm_uport);
 
 	msm_uport->clk_state = MSM_HS_CLK_PORT_OFF;
 	dma_unmap_single(uport->dev, msm_uport->tx.dma_base,
