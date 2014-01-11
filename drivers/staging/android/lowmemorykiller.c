@@ -73,6 +73,9 @@ static struct shrink_control lowmem_notif_sc = {GFP_KERNEL, 0};
 static size_t lowmem_minfree_notif_trigger;
 static struct kobject *lowmem_notify_kobj;
 
+static int done_reclaim_fs = 0;
+
+
 #define lowmem_print(level, x...)			\
 	do {						\
 		if (lowmem_debug_level >= (level))	\
@@ -93,6 +96,18 @@ static int test_task_flag(struct task_struct *p, int flag)
 	} while_each_thread(p, t);
 
 	return 0;
+}
+
+static void drop_slab1(void)
+{
+	int nr_objects;
+	struct shrink_control shrink = {
+		.gfp_mask = GFP_KERNEL,
+	};
+
+	do {
+		nr_objects = shrink_slab(&shrink, 1000, 1000);
+	} while (nr_objects > 10);
 }
 
 static DEFINE_MUTEX(scan_mutex);
@@ -292,6 +307,10 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 			break;
 		}
 	}
+
+	if (min_score_adj >= lowmem_adj[4])
+		done_reclaim_fs = 0;
+
 	if (nr_to_scan > 0)
 		lowmem_print(3, "lowmem_shrink %lu, %x, ofree %d %d, ma %d\n",
 				nr_to_scan, sc->gfp_mask, other_free,
@@ -376,6 +395,13 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
 		     nr_to_scan, sc->gfp_mask, rem);
 	mutex_unlock(&scan_mutex);
+
+	if (min_score_adj <= lowmem_adj[3] && !done_reclaim_fs && current_is_kswapd()) {
+		// We are very low on memory, do extra work to free memory
+		done_reclaim_fs = 1;
+		drop_slab1();
+	}
+
 	return rem;
 }
 
