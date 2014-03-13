@@ -2213,7 +2213,8 @@ static int mdss_fb_ioctl(struct fb_info *info, unsigned int cmd,
 	mdss_fb_power_setting_idle(mfd);
 	if ((cmd != MSMFB_VSYNC_CTRL) && (cmd != MSMFB_OVERLAY_VSYNC_CTRL) &&
 			(cmd != MSMFB_ASYNC_BLIT) && (cmd != MSMFB_BLIT) &&
-			(cmd != MSMFB_NOTIFY_UPDATE)) {
+			(cmd != MSMFB_NOTIFY_UPDATE) &&
+			(cmd != MSMFB_OVERLAY_PREPARE)) {
 		ret = mdss_fb_pan_idle(mfd);
 		if (ret) {
 			pr_debug("Shutdown pending. Aborting operation %x\n",
@@ -2307,13 +2308,6 @@ static int mdss_fb_register_extra_panel(struct platform_device *pdev,
 		pr_err("split panel already setup for framebuffer device %s\n",
 				dev_name(&pdev->dev));
 		return -EEXIST;
-	}
-
-	if ((fb_pdata->panel_info.type != MIPI_VIDEO_PANEL) ||
-			(pdata->panel_info.type != MIPI_VIDEO_PANEL)) {
-		pr_err("Split panel not supported for panel type %d\n",
-				pdata->panel_info.type);
-		return -EINVAL;
 	}
 
 	fb_pdata->next = pdata;

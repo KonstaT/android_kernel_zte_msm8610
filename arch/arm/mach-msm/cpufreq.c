@@ -228,6 +228,9 @@ static int msm_cpufreq_verify(struct cpufreq_policy *policy)
 
 static unsigned int msm_cpufreq_get_freq(unsigned int cpu)
 {
+	if (is_clk && is_sync)
+		cpu = 0;
+
 	if (is_clk)
 		return clk_get_rate(cpu_clk[cpu]) / 1000;
 
@@ -259,7 +262,7 @@ static int __cpuinit msm_cpufreq_init(struct cpufreq_policy *policy)
 	init_completion(&cpu_work->complete);
 
 	/* synchronous cpus share the same policy */
-	if (!cpu_clk[policy->cpu])
+	if (is_clk && !cpu_clk[policy->cpu])
 		return 0;
 
 	if (cpufreq_frequency_table_cpuinfo(policy, table)) {

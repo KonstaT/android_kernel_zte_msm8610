@@ -27,6 +27,12 @@
 #include <linux/msm_ssbi.h>
 #include <mach/msm_bus.h>
 
+#define WLAN_RF_REG_ADDR_START_OFFSET   0x3
+#define WLAN_RF_REG_DATA_START_OFFSET   0xf
+#define WLAN_RF_READ_REG_CMD            0x3
+#define WLAN_RF_WRITE_REG_CMD           0x2
+#define WLAN_RF_READ_CMD_MASK           0x3fff
+
 struct msm_camera_io_ext {
 	uint32_t mdcphy;
 	uint32_t mdcsz;
@@ -183,7 +189,8 @@ struct msm_gpio_set_tbl {
 };
 
 struct msm_camera_gpio_num_info {
-	uint16_t gpio_num[7];
+	uint16_t gpio_num[10];
+	uint8_t valid[10];
 };
 
 struct msm_camera_gpio_conf {
@@ -676,4 +683,5 @@ void msm_snddev_tx_route_deconfig(void);
 extern phys_addr_t msm_shared_ram_phys; /* defined in arch/arm/mach-msm/io.c */
 
 
+u32 wcnss_rf_read_reg(u32 rf_reg_addr);
 #endif
