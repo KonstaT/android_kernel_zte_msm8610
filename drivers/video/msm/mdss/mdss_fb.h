@@ -213,6 +213,9 @@ struct msm_fb_data_type {
 	wait_queue_head_t idle_wait_q;
 	bool shutdown_pending;
 
+	wait_queue_head_t ioctl_q;
+	atomic_t ioctl_ref_cnt;
+
 	struct task_struct *splash_thread;
 
 	struct msm_fb_backup_type msm_fb_backup;
