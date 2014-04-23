@@ -689,6 +689,7 @@ void mdss_mdp_clk_ctrl(int enable, int isr)
 		}
 	}
 
+	MDSS_XLOG(mdp_clk_cnt, changed, enable, current->pid);
 	pr_debug("%s: clk_cnt=%d changed=%d enable=%d\n",
 			__func__, mdp_clk_cnt, changed, enable);
 
@@ -792,6 +793,8 @@ int mdss_iommu_attach(struct mdss_data_type *mdata)
 	int i;
 
 	mutex_lock(&mdp_iommu_lock);
+	MDSS_XLOG(mdata->iommu_attached);
+
 	if (mdata->iommu_attached) {
 		pr_debug("mdp iommu already attached\n");
 		mutex_unlock(&mdp_iommu_lock);
@@ -823,6 +826,8 @@ int mdss_iommu_dettach(struct mdss_data_type *mdata)
 	int i;
 
 	mutex_lock(&mdp_iommu_lock);
+	MDSS_XLOG(mdata->iommu_attached);
+
 	if (!mdata->iommu_attached) {
 		pr_debug("mdp iommu already dettached\n");
 		mutex_unlock(&mdp_iommu_lock);
@@ -965,7 +970,7 @@ static int mdss_mdp_debug_init(struct mdss_data_type *mdata)
 	if (rc)
 		return rc;
 
-	mdss_debug_register_base(NULL, mdata->mdp_base, mdata->mdp_reg_size);
+	mdss_debug_register_base("mdp", mdata->mdp_base, mdata->mdp_reg_size);
 
 	return 0;
 }
@@ -1012,8 +1017,9 @@ int mdss_hw_init(struct mdss_data_type *mdata)
 		writel_relaxed(1, offset + 16);
 	}
 
-	mdata->nmax_concurrent_ad_hw = (mdata->mdp_rev <= MDSS_MDP_HW_REV_102) ?
-									1 : 2;
+	mdata->nmax_concurrent_ad_hw =
+		(mdata->mdp_rev < MDSS_MDP_HW_REV_103) ? 1 : 2;
+
 	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF, false);
 	pr_debug("MDP hw init done\n");
 
@@ -2141,6 +2147,8 @@ static int mdss_mdp_parse_dt_misc(struct platform_device *pdev)
 		"qcom,mdss-has-decimation");
 	mdata->has_wfd_blk = of_property_read_bool(pdev->dev.of_node,
 		"qcom,mdss-has-wfd-blk");
+	mdata->has_no_lut_read = of_property_read_bool(pdev->dev.of_node,
+		"qcom,mdss-no-lut-read");
 	prop = of_find_property(pdev->dev.of_node, "batfet-supply", NULL);
 	mdata->batfet_required = prop ? true : false;
 	rc = of_property_read_u32(pdev->dev.of_node,

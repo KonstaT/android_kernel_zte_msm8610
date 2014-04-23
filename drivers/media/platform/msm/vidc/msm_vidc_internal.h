@@ -68,6 +68,7 @@ enum vidc_ports {
 
 enum vidc_core_state {
 	VIDC_CORE_UNINIT = 0,
+	VIDC_CORE_LOADED,
 	VIDC_CORE_INIT,
 	VIDC_CORE_INIT_DONE,
 	VIDC_CORE_INVALID
@@ -231,7 +232,7 @@ struct msm_vidc_inst {
 	void *mem_client;
 	struct v4l2_ctrl_handler ctrl_handler;
 	struct completion completions[SESSION_MSG_END - SESSION_MSG_START + 1];
-	struct list_head ctrl_clusters;
+	struct v4l2_ctrl **cluster;
 	struct v4l2_fh event_handler;
 	struct msm_smem *extradata_handle;
 	wait_queue_head_t kernel_event_queue;
@@ -269,7 +270,6 @@ struct msm_vidc_ctrl {
 	u32 step;
 	u32 menu_skip_mask;
 	const char * const *qmenu;
-	u32 cluster;
 	struct v4l2_ctrl *priv;
 };
 
