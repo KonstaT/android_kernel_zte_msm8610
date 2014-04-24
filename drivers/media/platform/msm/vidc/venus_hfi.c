@@ -1398,8 +1398,6 @@ static int venus_hfi_iface_cmdq_write_nolock(struct venus_hfi_device *device,
 	}
 	WARN(!mutex_is_locked(&device->write_lock),
 			"Cmd queue write lock must be acquired");
-
-	mutex_lock(&device->write_lock);
 	if (!IS_VENUS_IN_VALID_STATE(device)) {
 		dprintk(VIDC_ERR, "%s - fw not in init state\n", __func__);
 		result = -EINVAL;
