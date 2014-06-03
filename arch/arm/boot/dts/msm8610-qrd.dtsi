@@ -28,7 +28,35 @@
 
 &soc {
 	i2c@f9923000{
-		focaltech@38{
+		focaltech@3e{
+			compatible = "focaltech,5x06";
+			reg = <0x3e>;
+			interrupt-parent = <&msmgpio>;
+			interrupts = <1 0x2>;
+			vdd-supply = <&pm8110_l19>;
+			vcc_i2c-supply = <&pm8110_l14>;
+			focaltech,name = "ft6x06";
+			focaltech,family-id = <0x06>;
+			focaltech,reset-gpio = <&msmgpio 0 0x00>;
+			focaltech,irq-gpio = <&msmgpio 1 0x00>;
+			focaltech,display-coords = <0 0 480 800>;
+			focaltech,panel-coords = <0 0 480 800>;
+			focaltech,button-map= <139 102 158>;
+			focaltech,no-force-update;
+			focaltech,i2c-pull-up;
+			focaltech,group-id = <1>;
+			focaltech,hard-reset-delay-ms = <20>;
+			focaltech,soft-reset-delay-ms = <150>;
+			focaltech,num-max-touches = <2>;
+			focaltech,fw-name = "ft_8610_qrd_fw.bin";
+			focaltech,fw-delay-aa-ms = <100>;
+			focaltech,fw-delay-55-ms = <30>;
+			focaltech,fw-upgrade-id1 = <0x79>;
+			focaltech,fw-upgrade-id2 = <0x08>;
+			focaltech,fw-delay-readid-ms = <10>;
+			focaltech,fw-delay-era-flsh-ms = <2000>;
+		};
+	     focaltech@38{
 			compatible = "focaltech,5x06";
 			reg = <0x38>;
 			interrupt-parent = <&msmgpio>;
@@ -56,6 +84,24 @@
 			focaltech,fw-delay-readid-ms = <10>;
 			focaltech,fw-delay-era-flsh-ms = <2000>;
 		};
+		goodix@5d {
+			compatible = "goodix,Goodix-TS";
+			reg = <0x5d>;
+			interrupt-parent = <&msmgpio>;
+			interrupts = <1 0x2>;
+			vdd-supply = <&pm8110_l19>;
+			vcc_i2c-supply = <&pm8110_l14>;
+
+			reset-gpios = <&msmgpio 0 0x00>;
+			interrupt-gpios = <&msmgpio 1 0x00>;
+			goodix,display-coords = <0 0 480 800>;
+			goodix,panel-coords = <0 0 480 800>;
+			goodix,button-map= <139 102 158>;
+			goodix,family-id = <0x0>;
+			goodix,no-force-update;
+			goodix,i2c-pull-up;
+
+		};
 	};
 
 	gen-vkeys {
@@ -65,33 +111,71 @@
 		qcom,disp-maxy = <800>;
 		qcom,panel-maxx = <481>;
 		qcom,panel-maxy = <940>;
-		qcom,key-codes = <139 0 102 158 0 0 0>;
+		qcom,key-codes = <139 102 158>;
 		qcom,y-offset = <0>;
 	};
 	serial@f991e000 {
 		status = "ok";
 	};
 
+//[ECID:000000] ZTEBSP wanghaifei 20130905 start, for sensor
 	i2c@f9925000 { /* BLSP-1 QUP-3 */
 		kionix@f {
-			compatible = "kionix,kxtj9";
+			compatible = "kionix,kxtf9";
 			reg = <0x0f>;
-			interrupt-parent = <&msmgpio>;
-			interrupts = <81 0x2>;
+			//interrupt-parent = <&msmgpio>;
+			//interrupts = <81 0x2>;
 			vdd-supply = <&pm8110_l19>;
 			vio-supply = <&pm8110_l14>;
+			kionix,gpio-irq1 = <&msmgpio 81 0>;
+			kionix,gpio-irq2 = <&msmgpio 82 0>;
 			kionix,min-interval = <5>;
-			kionix,init-interval = <200>;
-			kionix,axis-map-x = <1>;
-			kionix,axis-map-y = <0>;
+			kionix,poll-interval = <200>;
+			kionix,axis-map-x = <0>;
+			kionix,axis-map-y = <1>;
 			kionix,axis-map-z = <2>;
 			kionix,g-range = <2>;
-			kionix,negate-x;
-			kionix,negate-y;
-			kionix,negate-z;
+		//	kionix,negate-x;
+		//	kionix,negate-y;
+		//	kionix,negate-z;
 			kionix,res-12bit;
 		};
+		lis3dh@19 {
+			compatible = "st,lis3dh";
+			reg = <0x19>;
+			//interrupt-parent = <&msmgpio>;
+			//interrupts = <81 0x2>;
+			vdd-supply = <&pm8110_l19>;
+			vio-supply = <&pm8110_l14>;
+			st,gpio-irq1 = <&msmgpio 81 0>;
+			st,gpio-irq2 = <&msmgpio 82 0>;
+			st,min-interval = <5>;
+			st,poll-interval = <100>;
+			st,axis-map-x = <0>;
+			st,axis-map-y = <1>;
+			st,axis-map-z = <2>;
+			st,g-range = <2>;
+//			st,negate-x;
+//			st,negate-y;
+//			st,negate-z;
 	};
+		ak09911@d {
+			compatible = "akm,ak09911";
+			reg = <0x0d>;
+			vdd-supply = <&pm8110_l19>;
+			vio-supply = <&pm8110_l14>;
+			akm,layout = <3>;
+			akm,gpio-rstn = <&msmgpio 58 0>;
+		};
+		taos@39 {
+			compatible = "taos,tmd277x";
+			reg = <0x39>;
+			vdd-supply = <&pm8110_l19>;
+			vio-supply = <&pm8110_l14>;
+			gpios = <&msmgpio 80 0>;
+		};
+	};
+//[ECID:000000] ZTEBSP wanghaifei 20130905 end, for sensor
 
 	flashlight {
 		compatible = "qcom,leds-gpio-flash";
@@ -105,11 +189,26 @@
 	qcom,wdt@f9017000 {
 		qcom,bark-time = <13000>;
 	};
+	
+	/*doumingming 20130929 for 8x10 color_led,start*/
+	color_led {
+		compatible = "qcom,leds-gpio-color-led";
+		status = "okay";
+		qcom,red-led = <&msmgpio 59 0>;
+		qcom,green-led = <&msmgpio 60 0>;
+		qcom,blink-on-time = <500>;
+		qcom,blink-off-time = <1500>;
+		linux,name = "color_leds";
+		linux,default-trigger = "color_leds-trigger";
+	};
+	/*doumingming 20130929 for 8x10 color_led,end*/
 
 	gpio_keys {
                 compatible = "gpio-keys";
                 input-name = "gpio-keys";
 
+//modify by ZTEBSP liwen for wolume down key 20130705 start
+/*
                 camera_snapshot {
                         label = "camera_snapshot";
                         gpios = <&msmgpio 73 0x1>;
@@ -127,7 +226,8 @@
                         gpio-key,wakeup;
                         debounce-interval = <15>;
                 };
-
+*/
+// modify by ZTEBSP liwen for wolume down key 20130705 end
                 vol_up {
                         label = "volume_up";
                         gpios = <&msmgpio 72 0x1>;
@@ -136,6 +236,16 @@
                         gpio-key,wakeup;
                         debounce-interval = <15>;
 		};
+//add by ZTEBSP liwen for wolume down key 20130705 start
+            		vol_down {
+			                    label = "volume_down";
+			                    gpios = <&msmgpio 73 0x1>;
+			                    linux,input-type = <1>;
+                    			linux,code = <114>;
+			                    gpio-key,wakeup;
+			                    debounce-interval = <15>;
+		                     };
+//add by ZTEBSP liwen for wolume down key 20130705 end		
 	};
 
     sound {
@@ -210,13 +320,13 @@
 
 &spmi_bus {
 	qcom,pm8110@0 {
-		qcom,leds@a100 {
+	         /*doumingming 20130929 for 8x10 button_led,start*/
+		/*qcom,leds@a100 {
 			status = "okay";
 			qcom,led_mpp_2 {
 				label = "mpp";
-				linux,name = "button-backlight";
-				linux,default-trigger = "hr-trigger";
-				qcom,current-setting = <20>;
+				linux,name = "wled-homerow";
+				linux-default-trigger = "hr-trigger";
 				qcom,default-state = "off";
 				qcom,max-current = <40>;
 				qcom,id = <6>;
@@ -224,7 +334,23 @@
 				qcom,mode-ctrl = <0x61>;
 				qcom,mode = "manual";
 			};
+		};*/
+		qcom,leds@a100 {
+			status = "okay";
+			qcom,led_mpp_2 {
+				label = "mpp";
+				linux,name = "button-backlight";
+				linux,default-trigger = "none";
+				qcom,default-state = "off";
+				qcom,max-current = <40>;
+				qcom,current-setting = <5>;
+				qcom,id = <6>;
+				qcom,mode = "manual";
+				qcom,source-sel = <1>;
+				qcom,mode-ctrl = <0x60>;
+			};
 		};
+		/*doumingming 20130929 for 8x10 button_led,end*/
 
 		qcom,leds@a200 {
 			status = "okay";
@@ -238,9 +364,10 @@
 				qcom,source-sel = <8>;
 				qcom,mode-ctrl = <0x10>;
 				qcom,pwm-channel = <0>;
-				qcom,pwm-us = <27>;
+				qcom,pwm-us = <25>;         //zhoufan modify for PWM 40khz
 				qcom,vin-ctrl = <0x03>;
 				qcom,mode = "pwm";
+				qcom,min-brightness = <10>;
 			};
 		};
 	};
@@ -258,6 +385,8 @@
 
 &sdhc_1 {
 	vdd-supply = <&pm8110_l17>;
+	qcom,vdd-always-on;
+	qcom,vdd-lpm-sup;
 	qcom,vdd-voltage-level = <2900000 2900000>;
 	qcom,vdd-current-level = <200 400000>;
 

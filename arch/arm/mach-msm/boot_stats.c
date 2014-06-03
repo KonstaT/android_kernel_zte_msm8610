@@ -68,16 +68,18 @@ static int mpm_parse_dt(void)
 
 static void print_boot_stats(void)
 {
-	pr_info("KPI: Bootloader start count = %u\n",
-			boot_stats->bootloader_start);
-	pr_info("KPI: Bootloader end count = %u\n",
-			boot_stats->bootloader_end);
+	unsigned int now;
+	pr_info("KPI: Bootloader start count = %u, %dms\n",
+			boot_stats->bootloader_start, boot_stats->bootloader_start * 1000 /mpm_counter_freq);
+	pr_info("KPI: Bootloader end count = %u, %dms\n",
+			boot_stats->bootloader_end, boot_stats->bootloader_end* 1000 /mpm_counter_freq);
 	pr_info("KPI: Bootloader display count = %u\n",
 			boot_stats->bootloader_display);
-	pr_info("KPI: Bootloader load kernel count = %u\n",
-			boot_stats->bootloader_load_kernel);
-	pr_info("KPI: Kernel MPM timestamp = %u\n",
-			__raw_readl(mpm_counter_base));
+	pr_info("KPI: Bootloader load kernel count = %u, %dms\n",
+			boot_stats->bootloader_load_kernel, boot_stats->bootloader_load_kernel* 1000 /mpm_counter_freq);
+	now = __raw_readl(mpm_counter_base);
+	pr_info("KPI: Kernel MPM timestamp = %u, %dms\n",
+			now, now * 1000 /mpm_counter_freq);
 	pr_info("KPI: Kernel MPM Clock frequency = %u\n",
 			mpm_counter_freq);
 }

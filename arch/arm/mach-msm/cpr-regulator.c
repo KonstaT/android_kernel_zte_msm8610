@@ -117,7 +117,9 @@
 #define CPR_INT_DEFAULT	(CPR_INT_UP | CPR_INT_DOWN)
 
 #define CPR_NUM_RING_OSC	8
-#define CPR_NUM_SAVE_REGS	10
+
+//#define CPR_NUM_SAVE_REGS	10
+
 
 /* RBCPR Clock Control Register */
 #define RBCPR_CLK_SEL_MASK	BIT(0)
@@ -198,8 +200,8 @@ struct cpr_regulator {
 	int		*save_ctl;
 	int		*save_irq;
 
-	u32		save_regs[CPR_NUM_SAVE_REGS];
-	u32		save_reg_val[CPR_NUM_SAVE_REGS];
+	//u32		save_regs[CPR_NUM_SAVE_REGS];
+	//u32		save_reg_val[CPR_NUM_SAVE_REGS];
 
 	/* Config parameters */
 	bool		enable;
@@ -220,6 +222,9 @@ struct cpr_regulator {
 	u32		num_corners;
 	int		*quot_adjust;
 	u32		quotient_adjustment;
+
+        bool is_cpr_suspended;
+
 };
 
 #define CPR_DEBUG_MASK_IRQ	BIT(0)
@@ -344,6 +349,11 @@ static void cpr_ctl_enable(struct cpr_regulator *cpr_vreg, int corner)
 	u32 val;
 	int fuse_corner = cpr_vreg->corner_map[corner];
 
+	
+       if(cpr_vreg->is_cpr_suspended)
+	   	return;
+	
+
 	if (cpr_is_allowed(cpr_vreg) &&
 	    (cpr_vreg->ceiling_volt[fuse_corner] >
 		cpr_vreg->floor_volt[fuse_corner]))
@@ -355,9 +365,15 @@ static void cpr_ctl_enable(struct cpr_regulator *cpr_vreg, int corner)
 
 static void cpr_ctl_disable(struct cpr_regulator *cpr_vreg)
 {
+
+        if(cpr_vreg->is_cpr_suspended)
+		return;
+
 	cpr_ctl_modify(cpr_vreg, RBCPR_CTL_LOOP_EN, 0);
 }
 
+
+#if 0
 static void cpr_regs_save(struct cpr_regulator *cpr_vreg)
 {
 	int i, offset;
@@ -379,6 +395,7 @@ static void cpr_regs_restore(struct cpr_regulator *cpr_vreg)
 		cpr_write(cpr_vreg, offset, val);
 	}
 }
+#endif
 
 static void cpr_corner_save(struct cpr_regulator *cpr_vreg, int corner)
 {
@@ -885,11 +902,16 @@ static int cpr_suspend(struct cpr_regulator *cpr_vreg)
 {
 	cpr_debug("suspend\n");
 
+        mutex_lock(&cpr_vreg->cpr_mutex);
+
 	cpr_ctl_disable(cpr_vreg);
 	disable_irq(cpr_vreg->cpr_irq);
 
 	cpr_irq_clr(cpr_vreg);
-	cpr_regs_save(cpr_vreg);
+
+	//cpr_regs_save(cpr_vreg);
+	cpr_vreg->is_cpr_suspended = true;
+       mutex_unlock(&cpr_vreg->cpr_mutex);
 
 	return 0;
 }
@@ -899,11 +921,17 @@ static int cpr_resume(struct cpr_regulator *cpr_vreg)
 {
 	cpr_debug("resume\n");
 
-	cpr_regs_restore(cpr_vreg);
+	//cpr_regs_restore(cpr_vreg);
+	mutex_lock(&cpr_vreg->cpr_mutex);
+        cpr_vreg->is_cpr_suspended = false;
+
 	cpr_irq_clr(cpr_vreg);
 
 	enable_irq(cpr_vreg->cpr_irq);
 	cpr_ctl_enable(cpr_vreg, cpr_vreg->corner);
+
+
+        mutex_unlock(&cpr_vreg->cpr_mutex);
 
 	return 0;
 }
@@ -1001,6 +1029,8 @@ static int __devinit cpr_config(struct cpr_regulator *cpr_vreg,
 	val |= RBCPR_CTL_SW_AUTO_CONT_ACK_EN;
 	cpr_write(cpr_vreg, REG_RBCPR_CTL, val);
 
+
+#if 0
 	/* Registers to save & restore for suspend */
 	cpr_vreg->save_regs[0] = REG_RBCPR_TIMER_INTERVAL;
 	cpr_vreg->save_regs[1] = REG_RBCPR_STEP_QUOT;
@@ -1015,6 +1045,7 @@ static int __devinit cpr_config(struct cpr_regulator *cpr_vreg,
 		(cpr_vreg->cpr_fuse_ro_sel[CPR_FUSE_CORNER_NORMAL]);
 	cpr_vreg->save_regs[9] = REG_RBCPR_GCNT_TARGET
 		(cpr_vreg->cpr_fuse_ro_sel[CPR_FUSE_CORNER_TURBO]);
+#endif
 
 	cpr_irq_set(cpr_vreg, CPR_INT_DEFAULT);
 

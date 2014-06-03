@@ -100,11 +100,13 @@ static int suspend_prepare(void)
 		return -EPERM;
 
 	pm_prepare_console();
+	printk("PM_DEBUG: suspend prepare console ok!\n");
 
 	error = pm_notifier_call_chain(PM_SUSPEND_PREPARE);
 	if (error)
 		goto Finish;
 
+	printk("PM_DEBUG: ready to freeze process \n");
 	error = suspend_freeze_processes();
 	if (!error)
 		return 0;
@@ -112,7 +114,9 @@ static int suspend_prepare(void)
 	suspend_stats.failed_freeze++;
 	dpm_save_failed_step(SUSPEND_FREEZE);
  Finish:
+        printk(KERN_ERR "PM_DEBUG: PM_POST_SUSPEND: suspend_prepare -enter: \n"); 
 	pm_notifier_call_chain(PM_POST_SUSPEND);
+        printk(KERN_ERR "PM_DEBUG: PM_POST_SUSPEND: suspend_prepare -leave: \n"); 
 	pm_restore_console();
 	return error;
 }
@@ -257,7 +261,10 @@ int suspend_devices_and_enter(suspend_state_t state)
 static void suspend_finish(void)
 {
 	suspend_thaw_processes();
+        printk(KERN_ERR "PM_DEBUG: PM_POST_SUSPEND: suspend_finish -enter: \n"); 	
 	pm_notifier_call_chain(PM_POST_SUSPEND);
+        printk(KERN_ERR "PM_DEBUG: PM_POST_SUSPEND: suspend_finish -leave: \n"); 
+
 	pm_restore_console();
 }
 
@@ -281,7 +288,7 @@ static int enter_state(suspend_state_t state)
 
 	printk(KERN_INFO "PM: Syncing filesystems ... ");
 	sys_sync();
-	printk("done.\n");
+	printk("PM: Syncing filesystems done.\n");
 
 	pr_debug("PM: Preparing system for %s sleep\n", pm_states[state]);
 	error = suspend_prepare();

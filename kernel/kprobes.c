@@ -95,10 +95,12 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
  */
 static struct kprobe_blackpoint kprobe_blacklist[] = {
 	{"preempt_schedule",},
+/*ZTE-MODIFY wanghaifei disable symbols that didn't exist in System.map and modules list, 20140213
 	{"native_get_debugreg",},
 	{"irq_entries_start",},
 	{"common_interrupt",},
-	{"mcount",},	/* mcount can be called from everywhere */
+	{"mcount",},*/	/* mcount can be called from everywhere */
+
 	{NULL}    /* Terminator */
 };
 

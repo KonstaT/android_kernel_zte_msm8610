@@ -428,7 +428,15 @@ static enum msm_cpu cpu_of_id[] = {
 	   MSM_CPU_UNKNOWN is set to 0 to ensure these IDs are
 	   considered as unknown CPU. */
 };
+int panel_id_from_lk;
 
+static int __init panel_num_setup(char *str)
+{
+	int cal = simple_strtol(str, NULL, 0);
+	panel_id_from_lk = cal;
+	return 1;
+}
+__setup("panel=", panel_num_setup);
 static enum msm_cpu cur_cpu;
 static int current_image;
 

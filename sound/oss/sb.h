@@ -40,7 +40,7 @@
 #define MDL_JAZZ	10	/* Media Vision Jazz16 */
 #define MDL_SMW		11	/* Logitech SoundMan Wave (Jazz16) */
 #define MDL_ESS		12	/* ESS ES688 and ES1688 */
-#define MDL_AZTECH	13	/* Aztech Sound Galaxy family */
+#define MDL_AZTECH	13	
 #define MDL_ES1868MIDI	14	/* MIDI port of ESS1868 */
 #define MDL_AEDSP	15	/* Audio Excel DSP 16 */
 #define MDL_ESSPCI	16	/* ESS PCI card */

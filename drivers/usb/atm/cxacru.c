@@ -1290,7 +1290,7 @@ static const struct usb_device_id cxacru_usb_ids[] = {
 	{ /* V = Conexant			P = ADSL modem				*/
 		USB_DEVICE(0x0572, 0xcb06),	.driver_info = (unsigned long) &cxacru_cb00
 	},
-	{ /* V = Conexant			P = ADSL modem (ZTE ZXDSL 852)		*/
+	{ 
 		USB_DEVICE(0x0572, 0xcb07),	.driver_info = (unsigned long) &cxacru_cb00
 	},
 	{ /* V = Olitec				P = ADSL modem version 2		*/
@@ -1317,7 +1317,7 @@ static const struct usb_device_id cxacru_usb_ids[] = {
 	{ /* V = Aethra				P = Starmodem UM1020			*/
 		USB_DEVICE(0x0659, 0x0020),	.driver_info = (unsigned long) &cxacru_cb00
 	},
-	{ /* V = Aztech Systems			P = ? AKA Pirelli AUA-010		*/
+	{ 
 		USB_DEVICE(0x0509, 0x0812),	.driver_info = (unsigned long) &cxacru_cb00
 	},
 	{ /* V = Netopia			P = Cayman 3341(Annex A)/3351(Annex B)	*/

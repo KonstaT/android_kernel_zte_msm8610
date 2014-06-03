@@ -53,6 +53,15 @@
 
 #include "mdss_fb.h"
 
+#include "mdss_panel.h"
+static struct proc_dir_entry * d_entry;
+static char  module_name[50]={"0"};
+static int msm_lcd_read_proc(char *page, char **start, off_t off, int count, int *eof, void *data);
+void init_lcd_proc(void);
+
+
+extern u32 LcdPanleID;     //zhoufan add
+
 #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
 #define MDSS_FB_NUM 3
 #else
@@ -399,6 +408,9 @@ static int mdss_fb_probe(struct platform_device *pdev)
 	fbi_list[fbi_list_index++] = fbi;
 
 	platform_set_drvdata(pdev, mfd);
+	
+       init_lcd_proc();
+    
 
 	rc = mdss_fb_register(mfd);
 	if (rc)
@@ -494,6 +506,45 @@ static int mdss_fb_remove(struct platform_device *pdev)
 
 	return 0;
 }
+
+static int msm_lcd_read_proc( char *page, char **start, off_t off, int count, int *eof, void *data)
+{
+	int len = 0;
+	printk("[ZGC]:msm_lcd_read_proc\n");
+	switch(LcdPanleID)
+	{
+		case TXD_ILI9806C_480_800_4P0_P821A10:
+			strcpy(module_name, "IC:ILI9806C+TXD; Glass:CMI; Resolution:480*800");
+			break;
+		case YASSY_ILI9805C_480_800_4P0_P821A10:
+			strcpy(module_name, "IC:ILI9805C+YASSY; Glass:CMI; Resolution:480*800");
+			break;	
+		case LEAD_OTM8018B_480_854_4P5_P821B10: //lijiangshuo add for P821B10 20140110
+			strcpy(module_name, "IC:OTM8018B+LEAD; Glass:CPT; Resolution:480*854");
+			break;
+		
+		case ZGD_NT35512_480_800_4P0_P821E10:
+			strcpy(module_name, "IC:NT35512+ZGD; Glass:CMI; Resolution:480*800");
+			break;
+		
+		default:
+			strcpy(module_name,"0");
+		break;
+	}
+	len = sprintf(page, "%s\n",module_name);
+	return len;
+}
+void  init_lcd_proc(void)
+{
+       printk("[ZGC]:init_lcd_proc\n");
+	d_entry = create_proc_entry("driver/lcd_id", 0, NULL);
+        if (d_entry) {
+                d_entry->read_proc = msm_lcd_read_proc;
+                d_entry->data = NULL;
+        }
+
+}
+
 
 static int mdss_fb_send_panel_event(struct msm_fb_data_type *mfd,
 					int event, void *arg)
@@ -743,6 +794,7 @@ void mdss_fb_update_backlight(struct msm_fb_data_type *mfd)
 		if ((pdata) && (pdata->set_backlight)) {
 			mutex_lock(&mfd->bl_lock);
 			mfd->bl_level = mfd->unset_bl_level;
+			msleep(100); // zhoufan add for white 20131202
 			pdata->set_backlight(pdata, mfd->bl_level);
 			mfd->bl_level_old = mfd->unset_bl_level;
 			mutex_unlock(&mfd->bl_lock);
@@ -764,6 +816,7 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 		return -EPERM;
 
 	switch (blank_mode) {
+		printk("zhoufan:%s:blank_mode=%d\n",__func__,blank_mode);
 	case FB_BLANK_UNBLANK:
 		if (!mfd->panel_power_on && mfd->mdp.on_fnc) {
 			ret = mfd->mdp.on_fnc(mfd);

@@ -200,6 +200,31 @@ out:
 	return ret;
 }
 
+int sysmon_send_led_cmd(enum subsys_id dest_ss, const char *tx_buf)
+{
+	struct sysmon_subsys *ss = &subsys[dest_ss];
+	const char expect[] = "leds:ack";
+	size_t prefix_len = ARRAY_SIZE(expect) - 1;
+	int ret;
+
+	if (ss->dev == NULL)
+		return -ENODEV;
+
+	if (dest_ss < 0 || dest_ss >= SYSMON_NUM_SS)
+		return -EINVAL;
+
+	mutex_lock(&ss->lock);
+	ret = sysmon_send_msg(ss, tx_buf, strlen(tx_buf));
+	if (ret)
+		goto out;
+
+	if (strncmp(ss->rx_buf, expect, prefix_len))
+		ret = -ENOSYS;
+out:
+	mutex_unlock(&ss->lock);
+	printk("send led cmd: %s, len= %d, rev:%s,ret = %d\n", tx_buf,strlen(tx_buf), ss->rx_buf,ret);
+	return ret;
+}
 /**
  * sysmon_get_reason() - Retrieve failure reason from a subsystem.
  * @dest_ss:	ID of subsystem to query

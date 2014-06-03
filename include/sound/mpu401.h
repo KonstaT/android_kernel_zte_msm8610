@@ -34,7 +34,7 @@
 #define MPU401_HW_ES18XX		7	/* AudioDrive ES18XX MPU-401 UART */
 #define MPU401_HW_FM801			8	/* ForteMedia FM801 */
 #define MPU401_HW_TRID4DWAVE		9	/* Trident 4DWave */
-#define MPU401_HW_AZT2320		10	/* Aztech AZT2320 */
+#define MPU401_HW_AZT2320		10	
 #define MPU401_HW_ALS100		11	/* Avance Logic ALS100 */
 #define MPU401_HW_ICE1712		12	/* Envy24 */
 #define MPU401_HW_VIA686A		13	/* VIA 82C686A */

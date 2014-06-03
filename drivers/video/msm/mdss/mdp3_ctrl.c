@@ -654,6 +654,9 @@ static int mdp3_ctrl_off(struct msm_fb_data_type *mfd)
 	panel = mdp3_session->panel;
 	mutex_lock(&mdp3_session->lock);
 
+	if (panel && panel->set_backlight)
+		panel->set_backlight(panel, 0);
+
 	if (!mdp3_session->status) {
 		pr_debug("fb%d is off already", mfd->index);
 		goto off_error;
@@ -1064,7 +1067,10 @@ static int mdp3_ctrl_display_commit_kickoff(struct msm_fb_data_type *mfd,
 
 	mdp3_session->vsync_before_commit = 0;
 	if (reset_done && (panel && panel->set_backlight))
+	{
+		mdelay(100); // lijiangshuo add for continuous display white 20131203
 		panel->set_backlight(panel, panel->panel_info.bl_max);
+	}
 
 	mutex_unlock(&mdp3_session->lock);
 

@@ -66,3 +66,8 @@ obj-$(CONFIG_BMP18X_I2C)		+= bmp18x-i2c.o
 obj-$(CONFIG_SENSORS_MMA8X5X)	  	+= mma8x5x.o
 obj-$(CONFIG_SENSORS_STK3X1X)		+= stk3x1x.o
 obj-$(CONFIG_SENSORS_CAPELLA_CM36283)	+= cm36283.o
+#[ECID:000000] ZTEBSP wanghaifei start 20120529, compile ALS & proximity driver
+obj-$(CONFIG_INPUT_LIGHTSENSOR_TAOS) += taos.o
+obj-$(CONFIG_INPUT_LIGHTSENSOR_LTR558) += ltr558als.o
+obj-$(CONFIG_INPUT_LIGHTSENSOR_SENSORTEK) += stk3x1x_zte.o
+#[ECID:000000] ZTEBSP wanghaifei end 20120529

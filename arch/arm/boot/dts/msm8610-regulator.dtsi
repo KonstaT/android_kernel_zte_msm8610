@@ -49,9 +49,11 @@
 					1275000 1275000 1275000 1275000 1275000
 					1275000 1275000 1275000 1275000 1275000
 					1275000 1275000>;
-		qcom,pvs-corner-ceiling-slow = <1050000 1150000 1275000>;
-		qcom,pvs-corner-ceiling-nom  = <1050000 1075000 1275000>;
-		qcom,pvs-corner-ceiling-fast = <1050000 1050000 1275000>;
+// ZTE_MODIFY wanghaifei add qcom patch to avoid bit flip, case:01454781 2014-03-18 begin
+		qcom,pvs-corner-ceiling-slow = <1150000 1150000 1275000>;
+		qcom,pvs-corner-ceiling-nom  = <1150000 1150000 1275000>;
+		qcom,pvs-corner-ceiling-fast = <1150000 1150000 1275000>;
+// ZTE_MODIFY wanghaifei 2014-03-18 end
 		vdd-apc-supply = <&pm8110_s2>;
 
 		vdd-mx-supply = <&pm8110_l3_ao>;

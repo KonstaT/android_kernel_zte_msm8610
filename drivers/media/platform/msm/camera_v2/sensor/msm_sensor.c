@@ -20,6 +20,8 @@
 #include <mach/rpm-regulator-smd.h>
 #include <linux/regulator/consumer.h>
 
+#define CONFIG_MSMB_CAMERA_DEBUG  //yuxin add for debug 2013.09.05
+
 #undef CDBG
 #ifdef CONFIG_MSMB_CAMERA_DEBUG
 #define CDBG(fmt, args...) pr_err(fmt, ##args)
@@ -1225,12 +1227,12 @@ int32_t msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 			s_ctrl->sensordata->slave_info->sensor_id_reg_addr,
 			&chipid, MSM_CAMERA_I2C_WORD_DATA);
 	if (rc < 0) {
-		pr_err("%s: %s: read id failed\n", __func__,
-			s_ctrl->sensordata->sensor_name);
+		pr_err("%s: %s: read id failed,REG is %x\n", __func__,
+			s_ctrl->sensordata->sensor_name,s_ctrl->sensordata->slave_info->sensor_id_reg_addr);
 		return rc;
 	}
 
-	CDBG("%s: read id: %x expected id %x:\n", __func__, chipid,
+	pr_err("%s: read id: %x expected id %x:\n", __func__, chipid,
 		s_ctrl->sensordata->slave_info->sensor_id);
 	if (chipid != s_ctrl->sensordata->slave_info->sensor_id) {
 		pr_err("msm_sensor_match_id chip id doesnot match\n");
