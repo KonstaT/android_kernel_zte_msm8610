@@ -1,0 +1,15 @@
+menu "ZTE sensors"
+config ZTE_SENSORS_ACCEL_LIS3DH
+	tristate "accel lis3dh"
+	depends on I2C
+	select INPUT_POLLDEV
+	help
+	  If you say yes here, you just support st accel lis3dh
+
+config ZTE_SENSORS_LIGHT_TAOS
+        tristate "taos light&proximity sensor tmd2771"
+        depends on I2C
+        default n
+        help
+          Say Y if you want to support tmd2771 light&proximity sensor
+endmenu

@@ -288,6 +288,8 @@
 		interrupt-names = "core_irq", "bam_irq";
 
 		vdd-supply = <&pm8110_l17>;
+		qcom,vdd-always-on;
+		qcom,vdd-lpm-sup;
 		qcom,vdd-voltage-level = <2900000 2900000>;
 		qcom,vdd-current-level = <9000 400000>;
 
@@ -454,9 +456,11 @@
 		compatible = "qcom,bcl";
 	};
 
+	/* ZTE_MODIFY caoyaobin change from 61 MB of memblock-remove to 46MB */
 	qcom,msm-mem-hole {
 		compatible = "qcom,msm-mem-hole";
-		qcom,memblock-remove = <0x08800000 0x5600000>; /* Address and Size of Hole */
+		qcom,memblock-remove = <0x08800000 0x2E00000>,
+				<0x0C500000 0x1900000>; /* Address and Size of Hole */
 	};
 
 	qcom,wdt@f9017000 {

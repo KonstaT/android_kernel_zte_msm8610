@@ -3670,6 +3670,7 @@ static int64_t read_battery_id(struct qpnp_bms_chip *chip)
 	return result.physical;
 }
 
+//doumingming 20131224 modify for bms data ++
 static int set_battery_data(struct qpnp_bms_chip *chip)
 {
 	int64_t battery_id;
@@ -3677,7 +3678,21 @@ static int set_battery_data(struct qpnp_bms_chip *chip)
 	struct bms_battery_data *batt_data;
 	struct device_node *node;
 
-	if (chip->batt_type == BATT_DESAY) {
+#if defined(CONFIG_BATT_ZTE_4V2_554846)
+	chip->batt_type = 6;
+	printk("doumm:CONFIG_BATT_ZTE_4V2_554846\n");
+#elif defined(CONFIG_BATT_ZTE_4V2_524846)
+	chip->batt_type = 7;
+	printk("doumm:CONFIG_BATT_ZTE_4V2_524846\n");
+#endif
+
+	if (chip->batt_type == BATT_ZTE_4V2_524846) {
+		batt_data = &ZTE_4v2_524846_data;
+		printk("doumm:BATT_ZTE_4V2_524846\n");
+	} else if (chip->batt_type == BATT_ZTE_4V2_554846) {
+		batt_data = &ZTE_4v2_554846_data;
+		printk("doumm:BATT_ZTE_4V2_554846\n");
+	} else if (chip->batt_type == BATT_DESAY) {
 		batt_data = &desay_5200_data;
 	} else if (chip->batt_type == BATT_PALLADIUM) {
 		batt_data = &palladium_1500_data;
@@ -3777,6 +3792,7 @@ assign_data:
 
 	return 0;
 }
+//doumingming 20131224 modify for bms data --
 
 static int bms_get_adc(struct qpnp_bms_chip *chip,
 					struct spmi_device *spmi)
@@ -4189,8 +4205,11 @@ static int refresh_die_temp_monitor(struct qpnp_bms_chip *chip)
 						+ chip->temperature_margin;
 	chip->die_temp_monitor_params.low_temp = result.physical
 						- chip->temperature_margin;
+	/*
 	chip->die_temp_monitor_params.state_request =
 						ADC_TM_HIGH_LOW_THR_ENABLE;
+	*/
+	chip->die_temp_monitor_params.state_request = ADC_TM_HIGH_LOW_THR_DISABLE;
 	return qpnp_adc_tm_channel_measure(chip->adc_tm_dev,
 					&chip->die_temp_monitor_params);
 }

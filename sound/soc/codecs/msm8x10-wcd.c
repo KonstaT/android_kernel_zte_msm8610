@@ -75,6 +75,8 @@
 /* RX_HPH_CNP_WG_TIME increases by 0.24ms */
 #define MSM8X10_WCD_WG_TIME_FACTOR_US  240
 
+#define USE_SPK_RECEIVER_SWITCH_EXT_GPIO 93
+
 enum {
 	MSM8X10_WCD_I2C_TOP_LEVEL = 0,
 	MSM8X10_WCD_I2C_ANALOG,
@@ -1708,6 +1710,11 @@ static int msm8x10_wcd_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 		if (++msm8x10_wcd->micb_en_count == 1)
 			snd_soc_update_bits(codec, MSM8X10_WCD_A_MICB_1_CTL,
 					0x80, 0x80);
+//wegiuohua modify temp  for ecm mic 20131227
+#ifndef USES_MEMS_MIC_IN_PROJECT
+		snd_soc_update_bits(codec, micb_int_reg, 0x20, 0x20);
+#endif
+//weiguohua modify  temp for ecm mic 20131227
 		pr_debug("%s micb_en_count : %d", __func__,
 				msm8x10_wcd->micb_en_count);
 		break;
@@ -1734,6 +1741,9 @@ static int msm8x10_wcd_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 
 		/* Disable pull up TxFe for TX2 to Micbias */
 		snd_soc_update_bits(codec, micb_int_reg, 0x04, 0x00);
+#ifndef USES_MEMS_MIC_IN_PROJECT
+		snd_soc_update_bits(codec, micb_int_reg, 0x20, 0x00);
+#endif
 		break;
 	}
 	return 0;
@@ -2361,6 +2371,9 @@ static struct snd_soc_dai_driver msm8x10_wcd_i2s_dai[] = {
 static int msm8x10_wcd_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+	printk("%s: ear %s, %d. %s", __func__, (event ==SND_SOC_DAPM_POST_PMU)?"enabling":"disabling", USE_SPK_RECEIVER_SWITCH_EXT_GPIO, "\n");
+#endif
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
 		snd_soc_update_bits(w->codec, MSM8X10_WCD_A_CDC_ANA_CLK_CTL,
@@ -2370,6 +2383,9 @@ static int msm8x10_wcd_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 		dev_dbg(w->codec->dev,
 			"%s: Sleeping 20ms after enabling EAR PA\n",
 			__func__);
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+		gpio_direction_output(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, 1);
+#endif
 		msleep(20);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
@@ -2378,6 +2394,9 @@ static int msm8x10_wcd_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 			__func__);
 		snd_soc_update_bits(w->codec, MSM8X10_WCD_A_CDC_ANA_CLK_CTL,
 				0x4, 0x0);
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+		gpio_direction_output(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, 0);
+#endif
 		msleep(20);
 		break;
 	}
@@ -3842,12 +3861,27 @@ static int __init msm8x10_wcd_codec_init(void)
 	if (ret != 0)
 		pr_err("%s: Failed to add msm8x10 wcd I2C driver - error %d\n",
 		       __func__, ret);
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+	if (USE_SPK_RECEIVER_SWITCH_EXT_GPIO >= 0) {
+		ret = gpio_request(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, "SPK_RECEIVER_SWITCH_EXT_GPIO");
+		if (ret) {
+			pr_err("%s: gpio_request failed for SPK_RECEIVER_SWITCH_EXT_GPIO.\n",
+				__func__);
+			return -EINVAL;
+		}
+		gpio_direction_output(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, 0);
+	}
+#endif
 	return ret;
 }
 
 static void __exit msm8x10_wcd_codec_exit(void)
 {
 	i2c_del_driver(&msm8x10_wcd_i2c_driver);
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+	if (gpio_is_valid(USE_SPK_RECEIVER_SWITCH_EXT_GPIO))
+		gpio_free(USE_SPK_RECEIVER_SWITCH_EXT_GPIO);
+#endif
 }
 
 

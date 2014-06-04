@@ -1030,6 +1030,21 @@ config TOUCHSCREEN_GT9XX
 
           If unsure, say N.
 
+config TOUCHSCREEN_GT9XX_ZTE
+	bool "ZTE Goodix touchpanel GT9xx series"
+	depends on I2C
+	help
+	  Say Y here if you have a Goodix GT9xx touchscreen.
+	  Gt9xx controllers are multi touch controllers which can
+	  report 5 touches at a time.
+
+          If unsure, say N.
+
+if TOUCHSCREEN_GT9XX_ZTE
+source "drivers/input/touchscreen/gt9xx_zte/Kconfig"
+endif #TOUCHSCREEN_GT9XX_ZTE
+if !TOUCHSCREEN_GT9XX_ZTE
 source "drivers/input/touchscreen/gt9xx/Kconfig"
+endif #!TOUCHSCREEN_GT9XX_ZTE
 
 endif

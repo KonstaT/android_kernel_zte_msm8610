@@ -4183,7 +4183,7 @@ static int wcd9xxx_init_and_calibrate(struct wcd9xxx_mbhc *mbhc)
 
 		if (!ret && mbhc->mbhc_cfg->gpio) {
 			/* Requested with IRQF_DISABLED */
-			enable_irq(mbhc->mbhc_cfg->gpio_irq);
+			//enable_irq(mbhc->mbhc_cfg->gpio_irq);
 
 			/* Bootup time detection */
 			wcd9xxx_swch_irq_handler(mbhc);

@@ -56,6 +56,23 @@
 			focaltech,fw-delay-readid-ms = <10>;
 			focaltech,fw-delay-era-flsh-ms = <2000>;
 		};
+		goodix@5d {
+			compatible = "goodix,Goodix-TS";
+			reg = <0x5d>;
+			interrupt-parent = <&msmgpio>;
+			interrupts = <1 0x2>;
+			vdd-supply = <&pm8110_l19>;
+			vcc_i2c-supply = <&pm8110_l14>;
+
+			reset-gpios = <&msmgpio 0 0x00>;
+			interrupt-gpios = <&msmgpio 1 0x00>;
+			goodix,display-coords = <0 0 480 800>;
+			goodix,panel-coords = <0 0 480 800>;
+			goodix,button-map= <139 102 158>;
+			goodix,family-id = <0x0>;
+			goodix,no-force-update;
+			goodix,i2c-pull-up;
+		};
 	};
 
 	gen-vkeys {
@@ -91,6 +108,34 @@
 			kionix,negate-z;
 			kionix,res-12bit;
 		};
+//[ECID:000000] ZTEBSP wanghaifei 20130905 start, for sensor
+		lis3dh@19 {
+			compatible = "st,lis3dh";
+			reg = <0x19>;
+			//interrupt-parent = <&msmgpio>;
+			//interrupts = <81 0x2>;
+			vdd-supply = <&pm8110_l19>;
+			vio-supply = <&pm8110_l14>;
+			st,gpio-irq1 = <&msmgpio 81 0>;
+			st,gpio-irq2 = <&msmgpio 82 0>;
+			st,min-interval = <5>;
+			st,poll-interval = <100>;
+			st,axis-map-x = <0>;
+			st,axis-map-y = <1>;
+			st,axis-map-z = <2>;
+			st,g-range = <2>;
+			//st,negate-x;
+			//st,negate-y;
+			//st,negate-z;
+		};
+		taos@39 {
+			compatible = "taos,tmd277x";
+			reg = <0x39>;
+			vdd-supply = <&pm8110_l19>;
+			vio-supply = <&pm8110_l14>;
+			gpios = <&msmgpio 80 0>;
+		};
+//[ECID:000000] ZTEBSP wanghaifei 20130905 end, for sensor
 	};
 
 	flashlight {
@@ -106,10 +151,25 @@
 		qcom,bark-time = <13000>;
 	};
 
+	/*doumingming 20130929 for 8x10 color_led,start*/
+	color_led {
+		compatible = "qcom,leds-gpio-color-led";
+		status = "okay";
+		qcom,red-led = <&msmgpio 59 0>;
+		qcom,green-led = <&msmgpio 60 0>;
+		qcom,blink-on-time = <500>;
+		qcom,blink-off-time = <1500>;
+		linux,name = "color_leds";
+		linux,default-trigger = "color_leds-trigger";
+	};
+	/*doumingming 20130929 for 8x10 color_led,end*/
+
 	gpio_keys {
                 compatible = "gpio-keys";
                 input-name = "gpio-keys";
 
+//modify by ZTEBSP liwen for wolume down key 20130705 start
+/*
                 camera_snapshot {
                         label = "camera_snapshot";
                         gpios = <&msmgpio 73 0x1>;
@@ -127,6 +187,8 @@
                         gpio-key,wakeup;
                         debounce-interval = <15>;
                 };
+*/
+// modify by ZTEBSP liwen for wolume down key 20130705 end
 
                 vol_up {
                         label = "volume_up";
@@ -136,6 +198,17 @@
                         gpio-key,wakeup;
                         debounce-interval = <15>;
 		};
+
+//add by ZTEBSP liwen for wolume down key 20130705 start
+		vol_down {
+			label = "volume_down";
+			gpios = <&msmgpio 73 0x1>;
+			linux,input-type = <1>;
+			linux,code = <114>;
+			gpio-key,wakeup;
+			debounce-interval = <15>;
+		};
+//add by ZTEBSP liwen for wolume down key 20130705 end
 	};
 
     sound {
@@ -210,21 +283,23 @@
 
 &spmi_bus {
 	qcom,pm8110@0 {
+		/*doumingming 20130929 for 8x10 button_led,start*/
 		qcom,leds@a100 {
 			status = "okay";
 			qcom,led_mpp_2 {
 				label = "mpp";
 				linux,name = "button-backlight";
-				linux,default-trigger = "hr-trigger";
-				qcom,current-setting = <20>;
+				linux,default-trigger = "none";
+				qcom,current-setting = <5>;
 				qcom,default-state = "off";
 				qcom,max-current = <40>;
 				qcom,id = <6>;
 				qcom,source-sel = <1>;
-				qcom,mode-ctrl = <0x61>;
+				qcom,mode-ctrl = <0x60>;
 				qcom,mode = "manual";
 			};
 		};
+		/*doumingming 20130929 for 8x10 button_led,end*/
 
 		qcom,leds@a200 {
 			status = "okay";
@@ -238,9 +313,10 @@
 				qcom,source-sel = <8>;
 				qcom,mode-ctrl = <0x10>;
 				qcom,pwm-channel = <0>;
-				qcom,pwm-us = <27>;
+				qcom,pwm-us = <25>; //zhoufan modify for PWM 40khz
 				qcom,vin-ctrl = <0x03>;
 				qcom,mode = "pwm";
+				qcom,min-brightness = <10>;
 			};
 		};
 	};
@@ -258,6 +334,8 @@
 
 &sdhc_1 {
 	vdd-supply = <&pm8110_l17>;
+	qcom,vdd-always-on;
+	qcom,vdd-lpm-sup;
 	qcom,vdd-voltage-level = <2900000 2900000>;
 	qcom,vdd-current-level = <200 400000>;
 

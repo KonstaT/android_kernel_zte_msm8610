@@ -1,0 +1,2 @@
+obj-$(CONFIG_ZTE_SENSORS_ACCEL_LIS3DH)	+= lis3dh_acc.o
+obj-$(CONFIG_ZTE_SENSORS_LIGHT_TAOS)	+= taos.o
