@@ -362,6 +362,7 @@ static struct msm_gpiomux_config msm_focaltech_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &gpio_spi_susp_config,
 		},
 	},
+#if 0 //modify by wanggang  for change camera VDD form inside to outside LDO 2014.05.08 begin
 	{
 		.gpio      = 87,		/* BLSP1 QUP4 SPI_DATA_MISO */
 		.settings = {
@@ -369,6 +370,7 @@ static struct msm_gpiomux_config msm_focaltech_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &gpio_spi_susp_config,
 		},
 	},
+#endif//modify by wanggang for change camera VDD form inside to outside LDO 2014.05.08end
 	{
 		.gpio      = 89,		/* BLSP1 QUP4 SPI_CLK */
 		.settings = {

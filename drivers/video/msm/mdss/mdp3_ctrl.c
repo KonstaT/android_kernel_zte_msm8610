@@ -1041,7 +1041,10 @@ static int mdp3_ctrl_display_commit_kickoff(struct msm_fb_data_type *mfd,
 
 	mdp3_session->vsync_before_commit = 0;
 	if (reset_done && (panel && panel->set_backlight))
+	{
+		mdelay(100); // lijiangshuo add for continuous display white 20131203
 		panel->set_backlight(panel, panel->panel_info.bl_max);
+	}
 
 	mutex_unlock(&mdp3_session->lock);
 

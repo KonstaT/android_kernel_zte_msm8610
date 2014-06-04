@@ -1,0 +1,70 @@
+#
+# TI's shared transport line discipline and the protocol
+# drivers (BT, FM and GPS)
+#
+menu "ZTE sensors"
+ config ZTE_SENSORS_ACCEL_KXTF9
+ 	tristate "kxtf9 accel support"
+	depends on I2C
+	select INPUT_POLLDEV
+	help
+	  If you say yes here you get support for kxtf9 accel sensor
+	  
+# added by yangze 20120919	  
+ config ZTE_SENSORS_ACCEL_KIONIX
+ 	tristate "kionix accel support"
+	depends on I2C
+	select INPUT_POLLDEV
+	help
+	  If you say yes here you get support for kionix accel sensor
+
+config ZTE_SENSORS_GYRO_L3G4200D
+   tristate "gyro l3g4200d"
+   depends on I2C
+   select INPUT_POLLDEV
+   help 
+      if you say yes here, you just support st gyro l3g4200d
+      
+config SENSORS_MPU3050
+	tristate "MPU3050 gyroscope support"
+	default n
+	depends on I2C
+	help
+	  If you say yes here you get support for Invensense
+	  gyroscope sensor MPU3050.
+
+config ZTE_SENSORS_ACCEL_LIS3DH
+   tristate "accel lis3dh"
+   depends on I2C
+   select INPUT_POLLDEV
+   help 
+      if you say yes here, you just support st accel lis3dh
+
+config ZTE_SENSORS_COMPASS_AK8963
+ 	tristate "AK8963 compass support"
+	depends on I2C
+	help
+	  If you say yes here you get support for Asahi Kasei's
+	  orientation sensor AK8963.
+
+config ZTE_SENSORS_COMPASS_AK09911
+	tristate "AK09911 compass support"
+	default n
+	depends on I2C
+	help
+	  If you say yes here you get support for Asahi Kasei's
+	  orientation sensor AK09911.
+	  
+config ZTE_SENSORS_CAP_PROX_SX9500
+	tristate "Semtech SX9500 used for SAR test"
+	depends on I2C && SYSFS
+	help
+	  Say Y here if you want to use SAR testing.
+	  
+config ZTE_SENSORS_ATTINY44A
+        tristate "attiny44a cap proximity sensor support"
+        depends on SYSFS
+        help
+          Say Y if support attiny44a cap proximity sensor.
+  	  
+endmenu

@@ -22,7 +22,22 @@ struct panel_id {
 	u16 id;
 	u16 type;
 };
+/*zhoufan add panel id enum for lcd, 20131211 ++*/
+#define PANEL_NAME_MAX_LEN 50
+#define TXD_ILI9806C_480_800_4P0_P821A10_NAME "qcom,mdss_dsi_ili9806c_wvga_video"
+#define YASSY_ILI9805C_480_800_4P0_P821A10_NAME "qcom,mdss_dsi_ili9805c_wvga_video"
+#define LEAD_OTM8018B_480_854_4P5_P821B10_NAME "qcom,mdss_dsi_otm8018b_fwvga_video" //lijiangshuo add for P821B10 20140110
+#define ZGD_NT35512_480_800_4P0_P821E10_NAME "qcom,mdss_dsi_nt35512_wvga_video"    
 
+enum {		/* mipi dsi panelid */
+	LCD_PANEL_NOPANEL,
+       TXD_ILI9806C_480_800_4P0_P821A10,
+       YASSY_ILI9805C_480_800_4P0_P821A10,
+       LEAD_OTM8018B_480_854_4P5_P821B10, // lijiangshuo add for P821B10 20140110
+       ZGD_NT35512_480_800_4P0_P821E10,  
+	LCD_PANEL_MAX,
+};
+/*zhoufan add panel id enum for lcd, 20131211 --*/
 #define DEFAULT_FRAME_RATE	60
 #define MDSS_DSI_RST_SEQ_LEN	10
 

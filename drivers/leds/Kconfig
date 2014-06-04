@@ -363,6 +363,15 @@ config LEDS_BD2802
 	help
 	  This option enables support for BD2802GU RGB LED driver chips
 	  accessed via the I2C bus.
+	  
+# [ECID:000000] ZTEBSP wanghaifei 20131107 start , add for modem led control	  
+config MODEM_LED
+        tristate "LED Support for modem control"
+        default n
+        depends on ARCH_MSM
+        help
+          This option enables support for LEDs controled by modem subsystem.		  
+# [ECID:000000] ZTEBSP wanghaifei 20131107 end, add for modem led control
 
 config LEDS_MSM_PMIC
         tristate "LED Support for Qualcomm PMIC connected LEDs"

@@ -37,8 +37,12 @@
 #define SMD_TX_BUF_SIZE			2048
 
 static struct workqueue_struct *gsmd_wq;
-
+#if defined(CONFIG_USB_AT)
+#define SMD_N_PORTS	3 
+#else
 #define SMD_N_PORTS	2
+#endif
+
 #define CH_OPENED	0
 #define CH_READY	1
 struct smd_port_info {
@@ -51,6 +55,11 @@ struct smd_port_info smd_pi[SMD_N_PORTS] = {
 	{
 		.name = "DS",
 	},
+#if defined(CONFIG_USB_AT)
+	{
+		.name = "DATA4",  
+	},
+#endif
 	{
 		.name = "UNUSED",
 	},
