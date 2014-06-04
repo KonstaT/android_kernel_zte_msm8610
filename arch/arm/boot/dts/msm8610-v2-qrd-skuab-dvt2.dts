@@ -49,6 +49,7 @@
 	qcom,mdss-pref-prim-intf = "dsi";
 };
 
+/* ZTEBSP yaotierui del
 &mdss_dsi0 {
 	qcom,dsi-pref-prim-pan = <&dsi_hx8389b_qhd_vid>;
 };
@@ -56,6 +57,7 @@
 &dsi_hx8389b_qhd_vid {
 	qcom,cont-splash-enabled;
 };
+*/
 
 &soc {
 	i2c@f9925000 {

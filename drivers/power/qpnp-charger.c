@@ -400,6 +400,7 @@ struct qpnp_chg_chip {
 	unsigned int			ext_ovp_isns_gpio;
 	unsigned int			usb_trim_default;
 	u8				chg_temp_thresh_default;
+	struct wake_lock chg_state_report_wake_lock;//maxiaoping 20140108 modify for charger report. 
 };
 
 static void
@@ -1331,9 +1332,18 @@ qpnp_arb_stop_work(struct work_struct *work)
 	struct qpnp_chg_chip *chip = container_of(dwork,
 				struct qpnp_chg_chip, arb_stop_work);
 
+	int real_usb_present = 0;
+	printk("doumm: Enter qpnp_arb_stop_work.\n");
 	if (!chip->chg_done)
 		qpnp_chg_charge_en(chip, !chip->charging_disabled);
 	qpnp_chg_force_run_on_batt(chip, chip->charging_disabled);
+	real_usb_present = qpnp_chg_is_usb_chg_plugged_in(chip);
+	printk("PM_DEBUG_MXP: real_usb_present = %d.\n",real_usb_present);
+	if(0 == real_usb_present)
+	{
+		power_supply_set_present(chip->usb_psy, 0);
+	}
+	printk("PM_DEBUG_MXP: Exit qpnp_arb_stop_work.\n");
 }
 
 static void
@@ -1419,6 +1429,11 @@ qpnp_chg_usb_chg_gone_irq_handler(int irq, void *_chip)
 			msecs_to_jiffies(ARB_STOP_WORK_MS));
 	}
 
+	if (!qpnp_chg_is_usb_chg_plugged_in(chip)) {
+		power_supply_set_present(chip->usb_psy, 0);
+		printk("doumm:charger irq report worongly!!\n");
+	}
+	printk("doumm: chg_usb_chg_gone_irq_handlerd.\n");
 	return IRQ_HANDLED;
 }
 
@@ -1700,7 +1715,7 @@ static irqreturn_t
 qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 {
 	struct qpnp_chg_chip *chip = _chip;
-	int usb_present, host_mode, usbin_health;
+	int usb_present, host_mode, usbin_health, temp_usb_in_status;
 	u8 psy_health_sts;
 
 	usb_present = qpnp_chg_is_usb_chg_plugged_in(chip);
@@ -1745,6 +1760,8 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 			if (!qpnp_is_dc_higher_prio(chip))
 				qpnp_chg_idcmax_set(chip, chip->maxinput_dc_ma);
 
+			//maxiaoping 20140108 add wakelock for report chg state,start.
+			wake_lock_timeout(&chip->chg_state_report_wake_lock, 3 * HZ);
 			qpnp_chg_usb_suspend_enable(chip, 0);
 			qpnp_chg_iusbmax_set(chip, QPNP_CHG_I_MAX_MIN_100);
 			qpnp_chg_iusb_trim_set(chip, chip->usb_trim_default);
@@ -1775,14 +1792,34 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 				chip->delta_vddmax_mv = 0;
 				qpnp_chg_set_appropriate_vddmax(chip);
 			}
+			//maxiaoping 20131206 modify for charger,start.
+			wake_lock_timeout(&chip->chg_state_report_wake_lock, 3*HZ);
 			schedule_delayed_work(&chip->eoc_work,
 				msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
 			schedule_work(&chip->soc_check_work);
 		}
 
 		power_supply_set_present(chip->usb_psy, chip->usb_present);
+		power_supply_set_online(chip->usb_psy, chip->usb_present);
+		power_supply_changed(chip->usb_psy);
+		if (chip->bat_if_base) {
+			power_supply_changed(&chip->batt_psy);
+		}
 		schedule_work(&chip->batfet_lcl_work);
 	}
+	else
+	{
+		printk("doumm: Read qpnp_chg_is_usb_chg_plugged_in wrong.\n");
+		temp_usb_in_status = qpnp_chg_is_usb_chg_plugged_in(chip);
+		printk("doumm: This time  temp_usb_in_status = %d.\n",temp_usb_in_status);
+		if((1 == usb_present)&&(0 == temp_usb_in_status))
+		{
+			chip->usb_present = temp_usb_in_status;
+			printk("PM_DEBUG_MXP: Force set no present of USB.\n");
+			power_supply_set_present(chip->usb_psy, chip->usb_present);
+		}
+	}
+	printk("doumm: Exit qpnp_chg_usb_usbin_valid_irq_handler.\n");
 
 	return IRQ_HANDLED;
 }
@@ -3816,6 +3853,8 @@ qpnp_eoc_work(struct work_struct *work)
 				qpnp_chg_charge_en(chip,
 						!chip->charging_disabled);
 				pr_debug("psy changed batt_psy\n");
+				/*maxiaoping 20140108 modify for charger report.*/
+				wake_lock_timeout(&chip->chg_state_report_wake_lock, 3 * HZ);
 				power_supply_changed(&chip->batt_psy);
 				qpnp_chg_enable_irq(&chip->chg_vbatdet_lo);
 				goto stop_eoc;
@@ -5549,6 +5588,10 @@ qpnp_charger_probe(struct spmi_device *spmi)
 	}
 
 	qpnp_chg_usb_chg_gone_irq_handler(chip->chg_gone.irq, chip);
+	
+	//maxiaoping 20140108 modify for charger,start.
+	wake_lock_init(&chip->chg_state_report_wake_lock, WAKE_LOCK_SUSPEND, "zte_chg_event_report");
+	//maxiaoping 20140108 modify for charger,end.
 	qpnp_chg_usb_usbin_valid_irq_handler(chip->usbin_valid.irq, chip);
 	qpnp_chg_dc_dcin_valid_irq_handler(chip->dcin_valid.irq, chip);
 	power_supply_set_present(chip->usb_psy,

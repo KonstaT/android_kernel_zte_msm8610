@@ -36,6 +36,7 @@
 #define DSI_MAX_PKT_SIZE 10
 #define DSI_SHORT_PKT_DATA_SIZE 2
 #define DSI_MAX_BYTES_TO_READ 16
+u32 LcdPanleID=(u32)LCD_PANEL_NOPANEL;    //zhoufan add 20131231
 
 struct dsi_host_v2_private {
 	int irq_no;
@@ -1482,6 +1483,23 @@ static struct device_node *dsi_find_panel_of_node(
 		 * ':' to get to the panel name
 		 */
 		panel_name = panel_cfg + 2;
+		//zhoufan add for compatible++
+		if (!strncmp(panel_name, TXD_ILI9806C_480_800_4P0_P821A10_NAME,
+				strnlen(TXD_ILI9806C_480_800_4P0_P821A10_NAME,PANEL_NAME_MAX_LEN))) {
+			LcdPanleID=TXD_ILI9806C_480_800_4P0_P821A10;
+		} else if (!strncmp(panel_name, YASSY_ILI9805C_480_800_4P0_P821A10_NAME,
+				strnlen(YASSY_ILI9805C_480_800_4P0_P821A10_NAME,PANEL_NAME_MAX_LEN))) {
+			LcdPanleID=YASSY_ILI9805C_480_800_4P0_P821A10;
+		} else if (!strncmp(panel_name, LEAD_OTM8018B_480_854_4P5_P821B10_NAME,
+				strnlen(LEAD_OTM8018B_480_854_4P5_P821B10_NAME,PANEL_NAME_MAX_LEN))) {
+			LcdPanleID=LEAD_OTM8018B_480_854_4P5_P821B10; // lijiangshuo add for P821B10 20140110
+		} else if (!strncmp(panel_name, ZGD_NT35512_480_800_4P0_P821E10_NAME,
+				strnlen(ZGD_NT35512_480_800_4P0_P821E10_NAME,PANEL_NAME_MAX_LEN))) {
+			LcdPanleID=ZGD_NT35512_480_800_4P0_P821E10;
+		} else {
+			LcdPanleID=LCD_PANEL_NOPANEL;
+		}
+		//zhoufan add for compatible--
 		pr_debug("%s:%d:%s:%s\n", __func__, __LINE__,
 			 panel_cfg, panel_name);
 
