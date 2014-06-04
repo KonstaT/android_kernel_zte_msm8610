@@ -1395,6 +1395,12 @@ static void msm_otg_notify_charger(struct msm_otg *motg, unsigned mA)
 			"Failed notifying %d charger type to PMIC\n",
 							motg->chg_type);
 
+	if (motg->online && mA == 0 && motg->cur_power == 0) 
+	{ 
+		motg->cur_power = 100; 
+		printk("%s: workaround for cannel detect\n", __func__); 
+	}
+
 	if (motg->cur_power == mA)
 		return;
 

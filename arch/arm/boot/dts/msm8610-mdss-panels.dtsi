@@ -10,9 +10,7 @@
  * GNU General Public License for more details.
  */
 
-/include/ "dsi-panel-truly-wvga-video.dtsi"
-/include/ "dsi-panel-truly-wvga-cmd.dtsi"
-/include/ "dsi-panel-nt35590-720p-video.dtsi"
-/include/ "dsi-panel-otm8018b-fwvga-video.dtsi"
-/include/ "dsi-panel-hx8379a-wvga-video.dtsi"
-/include/ "dsi-panel-hx8389b-qhd-video.dtsi"
+/include/ "dsi-panel-ili9805c-wvga-video.dtsi"
+/include/ "dsi-panel-ili9806c-wvga-video.dtsi"
+/include/ "dsi-panel-otm8018b-fwvga-video.dtsi" // lijiangshuo add for lead otm8018b for P821B10 20131226
+/include/ "dsi-panel-nt35512-wvga-video.dtsi"  /**  ZTE_MODIFY  zhoufan add for nt35512 ZGD LCD 2014-2-10 */
