@@ -9,6 +9,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
+#define USE_SPK_RECEIVER_SWITCH_EXT_GPIO 93
+
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/firmware.h>
@@ -1134,7 +1137,8 @@ static const struct snd_kcontrol_new msm8x10_wcd_snd_controls[] = {
 		       0, 12, 1, line_gain),
 	SOC_SINGLE_TLV("HPHR Volume", MSM8X10_WCD_A_RX_HPH_R_GAIN,
 		       0, 12, 1, line_gain),
-
+	SOC_SINGLE_TLV("ADC1 Volume", MSM8X10_WCD_A_TX_1_EN, 2, 19, 0, analog_gain),
+	SOC_SINGLE_TLV("ADC2 Volume", MSM8X10_WCD_A_TX_2_EN, 2, 19, 0, analog_gain),
 	SOC_SINGLE_S8_TLV("RX1 Digital Volume",
 			  MSM8X10_WCD_A_CDC_RX1_VOL_CTL_B2_CTL,
 			  -84, 40, digital_gain),
@@ -1650,6 +1654,11 @@ static int msm8x10_wcd_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 		snd_soc_update_bits(codec, micb_int_reg, 0x04, 0x04);
 		snd_soc_update_bits(codec, MSM8X10_WCD_A_MICB_1_CTL,
 					0x80, 0x80);
+		//wegiuohua modify temp  for ecm mic 20131227
+		#ifndef  USES_MEMS_MIC_IN_PROJECT
+		snd_soc_update_bits(codec, micb_int_reg, 0x20, 0x20);
+		#endif
+		//weiguohua modify  temp for ecm mic  20131227
 		break;
 	case SND_SOC_DAPM_POST_PMU:
 		usleep_range(20000, 20100);
@@ -1671,6 +1680,9 @@ static int msm8x10_wcd_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 
 		/* Disable pull up TxFe for TX2 to Micbias */
 		snd_soc_update_bits(codec, micb_int_reg, 0x04, 0x00);
+		#ifndef  USES_MEMS_MIC_IN_PROJECT		
+		snd_soc_update_bits(codec, micb_int_reg, 0x20, 0x00);
+		#endif
 		break;
 	}
 	return 0;
@@ -2298,17 +2310,26 @@ static struct snd_soc_dai_driver msm8x10_wcd_i2s_dai[] = {
 static int msm8x10_wcd_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+	printk("%s: ear %s, %d. %s", __func__, (event ==SND_SOC_DAPM_POST_PMU)?"enabling":"disabling", USE_SPK_RECEIVER_SWITCH_EXT_GPIO, "\n");
+#endif
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
 		dev_dbg(w->codec->dev,
 			"%s: Sleeping 20ms after enabling EAR PA\n",
 			__func__);
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+		gpio_direction_output(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, 1);
+#endif
 		msleep(20);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		dev_dbg(w->codec->dev,
 			"%s: Sleeping 20ms after disabling EAR PA\n",
 			__func__);
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+		gpio_direction_output(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, 0);
+#endif
 		msleep(20);
 		break;
 	}
@@ -3746,12 +3767,27 @@ static int __init msm8x10_wcd_codec_init(void)
 	if (ret != 0)
 		pr_err("%s: Failed to add msm8x10 wcd I2C driver - error %d\n",
 		       __func__, ret);
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+	if (USE_SPK_RECEIVER_SWITCH_EXT_GPIO >= 0) {
+		ret = gpio_request(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, "SPK_RECEIVER_SWITCH_EXT_GPIO");
+		if (ret) {
+			pr_err("%s: gpio_request failed for SPK_RECEIVER_SWITCH_EXT_GPIO.\n",
+				__func__);
+			return -EINVAL;
+		}
+		gpio_direction_output(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, 0);
+	}
+#endif
 	return ret;
 }
 
 static void __exit msm8x10_wcd_codec_exit(void)
 {
 	i2c_del_driver(&msm8x10_wcd_i2c_driver);
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+	if (gpio_is_valid(USE_SPK_RECEIVER_SWITCH_EXT_GPIO))
+		gpio_free(USE_SPK_RECEIVER_SWITCH_EXT_GPIO);
+#endif
 }
 
 

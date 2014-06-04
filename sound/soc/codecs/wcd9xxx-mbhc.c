@@ -9,6 +9,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
+
+#define   OPEN_HEADSET_REPORT_LOG   
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/firmware.h>
@@ -797,8 +800,14 @@ static void wcd9xxx_report_plug(struct wcd9xxx_mbhc *mbhc, int insertion,
 {
 	WCD9XXX_BCL_ASSERT_LOCKED(mbhc->resmgr);
 
+#ifdef OPEN_HEADSET_REPORT_LOG
+	printk("%s: enter insertion %d hph_status %x\n",
+		 __func__, insertion, mbhc->hph_status);
+
+#else
 	pr_debug("%s: enter insertion %d hph_status %x\n",
 		 __func__, insertion, mbhc->hph_status);
+#endif
 	if (!insertion) {
 		/* Report removal */
 		mbhc->hph_status &= ~jack_type;
@@ -807,10 +816,19 @@ static void wcd9xxx_report_plug(struct wcd9xxx_mbhc *mbhc, int insertion,
 		 * report release if we reported button press
 		 */
 		if (wcd9xxx_cancel_btn_work(mbhc))
+#ifdef OPEN_HEADSET_REPORT_LOG
+			printk("%s: button press is canceled\n", __func__);
+#else
 			pr_debug("%s: button press is canceled\n", __func__);
+#endif
 		else if (mbhc->buttons_pressed) {
+#ifdef OPEN_HEADSET_REPORT_LOG
+			printk("%s: release of button press%d\n",
+				 __func__, jack_type);
+#else
 			pr_debug("%s: release of button press%d\n",
 				 __func__, jack_type);
+#endif
 			wcd9xxx_jack_report(mbhc, &mbhc->button_jack, 0,
 					    mbhc->buttons_pressed);
 			mbhc->buttons_pressed &=
@@ -818,13 +836,24 @@ static void wcd9xxx_report_plug(struct wcd9xxx_mbhc *mbhc, int insertion,
 		}
 
 		if (mbhc->micbias_enable && mbhc->micbias_enable_cb) {
+#ifdef OPEN_HEADSET_REPORT_LOG
+			printk("%s: Disabling micbias\n", __func__);
+			mbhc->micbias_enable_cb(mbhc->codec, false);
+			mbhc->micbias_enable = false;
+#else
 			pr_debug("%s: Disabling micbias\n", __func__);
 			mbhc->micbias_enable_cb(mbhc->codec, false);
 			mbhc->micbias_enable = false;
+#endif
 		}
 		mbhc->zl = mbhc->zr = 0;
+#ifdef OPEN_HEADSET_REPORT_LOG
+		printk("%s: Reporting removal %d(%x)\n", __func__,
+			 jack_type, mbhc->hph_status);
+#else
 		pr_debug("%s: Reporting removal %d(%x)\n", __func__,
 			 jack_type, mbhc->hph_status);
+#endif
 		wcd9xxx_jack_report(mbhc, &mbhc->headset_jack, mbhc->hph_status,
 				    WCD9XXX_JACK_MASK);
 		wcd9xxx_set_and_turnoff_hph_padac(mbhc);
@@ -844,13 +873,23 @@ static void wcd9xxx_report_plug(struct wcd9xxx_mbhc *mbhc, int insertion,
 		    (mbhc->hph_status && mbhc->hph_status != jack_type)) {
 			if (mbhc->micbias_enable && mbhc->micbias_enable_cb &&
 			    mbhc->hph_status == SND_JACK_HEADSET) {
+#ifdef OPEN_HEADSET_REPORT_LOG
+					printk("%s: Disabling micbias\n",
+						 __func__);
+#else
 				pr_debug("%s: Disabling micbias\n", __func__);
+#endif
 				mbhc->micbias_enable_cb(mbhc->codec, false);
 				mbhc->micbias_enable = false;
 			}
+#ifdef OPEN_HEADSET_REPORT_LOG
 
+				printk("%s: Reporting removal (%x)\n",
+						__func__, mbhc->hph_status);
+#else
 			pr_debug("%s: Reporting removal (%x)\n",
 				 __func__, mbhc->hph_status);
+#endif
 			mbhc->zl = mbhc->zr = 0;
 			wcd9xxx_jack_report(mbhc, &mbhc->headset_jack,
 					    0, WCD9XXX_JACK_MASK);
@@ -873,15 +912,25 @@ static void wcd9xxx_report_plug(struct wcd9xxx_mbhc *mbhc, int insertion,
 		}
 
 		if (mbhc->micbias_enable && mbhc->micbias_enable_cb) {
+#ifdef OPEN_HEADSET_REPORT_LOG
+			printk("%s: Enabling micbias\n", __func__);
+			mbhc->micbias_enable_cb(mbhc->codec, true);
+#else
 			pr_debug("%s: Enabling micbias\n", __func__);
 			mbhc->micbias_enable_cb(mbhc->codec, true);
+#endif
 		}
 
 		if (mbhc->impedance_detect && impedance_detect_en)
 			wcd9xxx_detect_impedance(mbhc, &mbhc->zl, &mbhc->zr);
 
+#ifdef OPEN_HEADSET_REPORT_LOG
+		printk("%s: Reporting insertion %d(%x)\n", __func__,
+			 jack_type, mbhc->hph_status);
+#else
 		pr_debug("%s: Reporting insertion %d(%x)\n", __func__,
 			 jack_type, mbhc->hph_status);
+#endif
 		wcd9xxx_jack_report(mbhc, &mbhc->headset_jack,
 				    mbhc->hph_status, WCD9XXX_JACK_MASK);
 		wcd9xxx_clr_and_turnon_hph_padac(mbhc);
@@ -889,7 +938,11 @@ static void wcd9xxx_report_plug(struct wcd9xxx_mbhc *mbhc, int insertion,
 	/* Setup insert detect */
 	wcd9xxx_insert_detect_setup(mbhc, !insertion);
 
+#ifdef OPEN_HEADSET_REPORT_LOG
+	printk("%s: leave hph_status %x\n", __func__, mbhc->hph_status);
+#else
 	pr_debug("%s: leave hph_status %x\n", __func__, mbhc->hph_status);
+#endif
 }
 
 /* should be called under interrupt context that hold suspend */
@@ -2008,8 +2061,13 @@ static int wcd9xxx_enable_hs_detect(struct wcd9xxx_mbhc *mbhc,
 static void wcd9xxx_find_plug_and_report(struct wcd9xxx_mbhc *mbhc,
 					 enum wcd9xxx_mbhc_plug_type plug_type)
 {
+#ifdef OPEN_HEADSET_REPORT_LOG
+	printk("%s: enter current_plug(%d) new_plug(%d)\n",
+		 __func__, mbhc->current_plug, plug_type);
+#else
 	pr_debug("%s: enter current_plug(%d) new_plug(%d)\n",
 		 __func__, mbhc->current_plug, plug_type);
+#endif
 
 	WCD9XXX_BCL_ASSERT_LOCKED(mbhc->resmgr);
 
@@ -2053,8 +2111,13 @@ static void wcd9xxx_find_plug_and_report(struct wcd9xxx_mbhc *mbhc,
 			/* High impedance device found. Report as LINEOUT*/
 			wcd9xxx_report_plug(mbhc, 1, SND_JACK_LINEOUT);
 			wcd9xxx_cleanup_hs_polling(mbhc);
+#ifdef OPEN_HEADSET_REPORT_LOG
+			printk("%s: setup mic trigger for further detection\n",
+				 __func__);
+#else
 			pr_debug("%s: setup mic trigger for further detection\n",
 				 __func__);
+#endif
 			mbhc->lpi_enabled = true;
 			/*
 			 * Do not enable HPHL trigger. If playback is active,
@@ -2067,7 +2130,11 @@ static void wcd9xxx_find_plug_and_report(struct wcd9xxx_mbhc *mbhc,
 				wcd9xxx_report_plug(mbhc, 1,
 							 SND_JACK_HEADPHONE);
 			wcd9xxx_cleanup_hs_polling(mbhc);
+#ifdef OPEN_HEADSET_REPORT_LOG
+			printk("setup mic trigger for further detection\n");
+#else
 			pr_debug("setup mic trigger for further detection\n");
+#endif
 			mbhc->lpi_enabled = true;
 			wcd9xxx_enable_hs_detect(mbhc, 1, MBHC_USE_MB_TRIGGER |
 							  MBHC_USE_HPHL_TRIGGER,
@@ -2077,7 +2144,11 @@ static void wcd9xxx_find_plug_and_report(struct wcd9xxx_mbhc *mbhc,
 		WARN(1, "Unexpected current plug_type %d, plug_type %d\n",
 		     mbhc->current_plug, plug_type);
 	}
+#ifdef OPEN_HEADSET_REPORT_LOG
+	printk("%s: leave\n", __func__);
+#else
 	pr_debug("%s: leave\n", __func__);
+#endif
 }
 
 /* called under codec_resource_lock acquisition */
@@ -3404,27 +3475,52 @@ static irqreturn_t wcd9xxx_release_handler(int irq, void *data)
 	if (mbhc->buttons_pressed & WCD9XXX_JACK_BUTTON_MASK) {
 		ret = wcd9xxx_cancel_btn_work(mbhc);
 		if (ret == 0) {
+#ifdef OPEN_HEADSET_REPORT_LOG
+			printk("%s: Reporting long button release event\n",
+				 __func__);
+#else
 			pr_debug("%s: Reporting long button release event\n",
 				 __func__);
+#endif
 			wcd9xxx_jack_report(mbhc, &mbhc->button_jack, 0,
 					    mbhc->buttons_pressed);
 		} else {
 			if (wcd9xxx_is_false_press(mbhc)) {
+#ifdef OPEN_HEADSET_REPORT_LOG
+				printk("%s: Fake button press interrupt\n",
+					 __func__);
+#else
 				pr_debug("%s: Fake button press interrupt\n",
 					 __func__);
+#endif
 			} else {
 				if (mbhc->in_swch_irq_handler) {
+#ifdef OPEN_HEADSET_REPORT_LOG
+					printk("%s: Switch irq kicked in, ignore\n",
+						 __func__);
+#else
 					pr_debug("%s: Switch irq kicked in, ignore\n",
 						 __func__);
+#endif
 				} else {
+#ifdef OPEN_HEADSET_REPORT_LOG
+					printk("%s: Reporting btn press\n",
+						 __func__);
+#else
 					pr_debug("%s: Reporting btn press\n",
 						 __func__);
+#endif
 					wcd9xxx_jack_report(mbhc,
 							 &mbhc->button_jack,
 							 mbhc->buttons_pressed,
 							 mbhc->buttons_pressed);
+#ifdef OPEN_HEADSET_REPORT_LOG
+					printk("%s: Reporting btn release\n",
+						 __func__);
+#else
 					pr_debug("%s: Reporting btn release\n",
 						 __func__);
+#endif
 					wcd9xxx_jack_report(mbhc,
 						      &mbhc->button_jack,
 						      0, mbhc->buttons_pressed);
@@ -3854,7 +3950,6 @@ static int wcd9xxx_init_and_calibrate(struct wcd9xxx_mbhc *mbhc)
 
 		if (!ret && mbhc->mbhc_cfg->gpio) {
 			/* Requested with IRQF_DISABLED */
-			enable_irq(mbhc->mbhc_cfg->gpio_irq);
 
 			/* Bootup time detection */
 			wcd9xxx_swch_irq_handler(mbhc);

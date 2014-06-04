@@ -42,6 +42,9 @@
 #include "diag_dci.h"
 #include "diag_masks.h"
 #include "diagfwd_bridge.h"
+//chengzhaoguang20140507 add sstl lock
+#ifndef CONFIG_ZTE_FEATURE_DIAG_LOCK_WHOLE
+#endif
 
 #define MODE_CMD		41
 #define RESET_ID		2
@@ -1204,6 +1207,14 @@ int diag_process_apps_pkt(unsigned char *buf, int len)
 	int status = 0;
 #if defined(CONFIG_DIAG_OVER_USB)
 	unsigned char *ptr;
+#endif
+
+//chengzhaoguang20140507 add sstl lock
+#ifdef CONFIG_ZTE_FEATURE_DIAG_LOCK_WHOLE
+        driver->apps_rsp_buf[0] = 0x13;
+        (void)memcpy(&(driver->apps_rsp_buf[1]), temp, len);
+        encode_rsp_and_send(len + 1);
+        return 0;
 #endif
 
 	/* Check if the command is a supported mask command */

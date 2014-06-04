@@ -23,20 +23,19 @@ struct wcnss_prealloc {
 	void *ptr;
 };
 
-/* pre-alloced mem for WLAN driver */
 static struct wcnss_prealloc wcnss_allocs[] = {
-	{0, 8  * 1024, NULL},
-	{0, 8  * 1024, NULL},
-	{0, 8  * 1024, NULL},
-	{0, 8  * 1024, NULL},
+	{0, 2 * 1024, NULL},
+	{0, 2 * 1024, NULL},
+	{0, 4 * 1024, NULL},
+	{0, 4 * 1024, NULL},
+	{0, 8 * 1024, NULL},
+	{0, 8 * 1024, NULL},
+	{0, 8 * 1024, NULL},
+	{0, 16 * 1024, NULL},
+	{0, 16 * 1024, NULL},
+	{0, 16 * 1024, NULL},
 	{0, 32 * 1024, NULL},
 	{0, 32 * 1024, NULL},
-	{0, 32 * 1024, NULL},
-	{0, 32 * 1024, NULL},
-	{0, 32 * 1024, NULL},
-	{0, 32 * 1024, NULL},
-	{0, 32 * 1024, NULL},
-	{0, 64 * 1024, NULL},
 	{0, 64 * 1024, NULL},
 };
 

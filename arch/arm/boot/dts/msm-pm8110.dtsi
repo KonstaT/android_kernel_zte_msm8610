@@ -43,11 +43,15 @@
 				linux,code = <116>;
 			};
 
+// modify by ZTEBSP liwen for power key 20130705 start
+/*
 			qcom,pon_2 {
 				qcom,pon-type = <1>;
 				qcom,pull-up = <1>;
 				linux,code = <114>;
 			};
+*/
+//modify by ZTEBSP liwen for power  key 20130705 end		
 		};
 
 		pm8110_chg: qcom,charger {
@@ -62,15 +66,27 @@
 			qcom,vinmin-mv = <4300>;
 			qcom,vbatdet-mv = <4100>;
 			qcom,ibatmax-ma = <1500>;
-			qcom,ibatterm-ma = <100>;
+			qcom,ibatterm-ma = <240>; //doumingming modify
 			qcom,ibatsafe-ma = <1500>;
 			qcom,thermal-mitigation = <1500 700 600 325>;
 			qcom,vbatdet-delta-mv = <100>;
 			qcom,resume-soc = <99>;
-			qcom,tchg-mins = <150>;
+			qcom,tchg-mins = <512>; //doumingming modify
 			qcom,chg-vadc = <&pm8110_vadc>;
 			qcom,chg-adc_tm = <&pm8110_adc_tm>;
-
+			
+			/*doumingming 20131203 add for JEITA charging ++ */
+			qcom,maxinput-usb-ma = <1000>;
+			qcom,warm-bat-decidegc = <400>;
+			qcom,cool-bat-decidegc = <50>;
+			qcom,ibatmax-warm-ma = <700>;
+			qcom,warm-bat-mv = <4150>;
+			qcom,ibatmax-cool-ma = <600>;
+			qcom,cool-bat-mv = <4120>;
+			qcom,batt-hot-percentage = <35>;
+			qcom,batt-cold-percentage= <70>;
+			/*doumingming 20131203 add for JEITA charging -- */
+			
 			qcom,chgr@1000 {
 				status = "disabled";
 				reg = <0x1000 0x100>;
@@ -360,6 +376,7 @@
 			};
 		};
 
+//ZTE_MODIFY wanghaifei 2014-03-24 start, disable alarm during power off
 		qcom,pm8110_rtc {
 			spmi-dev-container;
 			compatible = "qcom,qpnp-rtc";
@@ -377,6 +394,7 @@
 				interrupts = <0x0 0x61 0x1>;
 			};
 		};
+//ZTE_MODIFY wanghaifei 2014-03-24 end
 
 		qcom,leds@a100 {
 			compatible = "qcom,leds-qpnp";

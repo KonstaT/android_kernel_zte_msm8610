@@ -70,3 +70,6 @@ obj-$(CONFIG_QSEECOM) += qseecom.o
 obj-$(CONFIG_QFP_FUSE) += qfp_fuse.o
 obj-$(CONFIG_TI_DRV2667) += ti_drv2667.o
 obj-$(CONFIG_QPNP_MISC) += qpnp-misc.o
+#[ECID:000000] ZTEBSP wanghaifei start 20120330, add sensor support
+obj-y      += zte-sensor/
+#[ECID:000000] ZTEBSP wanghaifei end 20120330, add sensor support

@@ -35,6 +35,7 @@
 #include <linux/rwsem.h>
 #include <linux/mfd/pm8xxx/misc.h>
 #include <linux/qpnp/qpnp-adc.h>
+#include <linux/proc_fs.h> 
 
 #include <mach/msm_smd.h>
 #include <mach/msm_iomap.h>
@@ -2468,6 +2469,55 @@ wcnss_wlan_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static char wlan_info[51] = "Device manufacturing:Qualcomm Model Number:WCN3620";
+static ssize_t wlan_info_read_proc(char *page, char **start, off_t off,
+                                int count, int *eof, void *data)
+{
+        //int len = strlen(wlan_info);
+        return sprintf(page, "%s\n", wlan_info);
+        //return len + 1;
+}
+
+static char bt_id[55] = "BT_Info = BT Information:Qualcomm Model Number:WCN3620";
+static ssize_t bt_id_read_proc(char *page, char **start, off_t off,
+                                int count, int *eof, void *data)
+{
+        //int len = strlen(bt_id);
+        return sprintf(page, "%s\n", bt_id);
+        //return len + 1;
+}
+
+static struct proc_dir_entry *wlan_info_proc_file;
+static struct proc_dir_entry *bt_id_proc_file;
+static void create_wlan_info_proc_file(void)
+{
+  wlan_info_proc_file = create_proc_entry("driver/wlan_info", 0644, NULL);
+  printk("goes to create_wlan_info_proc_file\n");
+  if (wlan_info_proc_file) {
+                        wlan_info_proc_file->read_proc = wlan_info_read_proc;
+   } else
+        printk(KERN_INFO "proc file create failed!\n");
+
+  bt_id_proc_file = create_proc_entry("driver/bt_id", 0644, NULL);
+ // printk("goes to create_wlan_info_proc_file\n");
+  if (bt_id_proc_file) {
+                        bt_id_proc_file->read_proc = bt_id_read_proc;
+   } else
+        printk(KERN_INFO "proc file create failed!\n");
+}
+
+static void remove_wlan_info_proc_file(void)
+{
+        printk("goes to remove_wlan_info_proc_file\n");
+        if(wlan_info_proc_file){
+                remove_proc_entry("driver/wlan_info", NULL);
+                wlan_info_proc_file = NULL;
+        }
+        if(bt_id_proc_file){
+                remove_proc_entry("driver/bt_id", NULL);
+                bt_id_proc_file = NULL;
+        }
+}
 
 static const struct dev_pm_ops wcnss_wlan_pm_ops = {
 	.suspend	= wcnss_wlan_suspend,
@@ -2507,12 +2557,15 @@ static int __init wcnss_wlan_init(void)
 	if (ret < 0)
 		pr_err("wcnss: pre-allocation failed\n");
 #endif
+        create_wlan_info_proc_file();
 
 	return ret;
 }
 
 static void __exit wcnss_wlan_exit(void)
 {
+        remove_wlan_info_proc_file();
+
 	if (penv) {
 		if (penv->pil)
 			subsystem_put(penv->pil);

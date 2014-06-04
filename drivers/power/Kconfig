@@ -495,4 +495,24 @@ config QPNP_BMS
 	  Say Y here to enable support for QPNP chip bms device.
 	  It registers a fuelgauge bms power supply to report
 	  State of Charge.
+
+#doumingming add for bms ++	  
+config BATT_ZTE_4V2_554846
+	tristate "QPNP Battery Monitoring System driver"
+	depends on QPNP_BMS
+	help
+	  Say Y here to enable support for QPNP chip bms device.
+	  It registers a fuelgauge bms power supply to report
+	  State of Charge.
+	  
+config BATT_ZTE_4V2_524846
+	tristate "QPNP Battery Monitoring System driver"
+	depends on QPNP_BMS
+	help
+	  Say Y here to enable support for QPNP chip bms device.
+	  It registers a fuelgauge bms power supply to report
+	  State of Charge.
+
+#doumingming add for bms --
+	  
 endif # POWER_SUPPLY
