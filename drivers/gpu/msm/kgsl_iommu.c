@@ -1123,6 +1123,10 @@ inline unsigned int kgsl_iommu_sync_unlock(struct kgsl_mmu *mmu,
 	*cmds++ = cp_type3_packet(CP_SET_PROTECTED_MODE, 1);
 	*cmds++ = 0;
 
+	/* WAIT_REG_MEM turns back on protected mode - push it off */
+	*cmds++ = cp_type3_packet(CP_SET_PROTECTED_MODE, 1);
+	*cmds++ = 0;
+
 	cmds += adreno_add_idle_cmds(adreno_dev, cmds);
 
 	return cmds - start;
