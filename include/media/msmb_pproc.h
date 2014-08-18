@@ -1,3 +1,7 @@
+#ifdef CONFIG_MSMB_CAMERA_ZTE
+#include <media/msmb_pproc_zte.h>
+#else
+
 #ifndef __MSMB_PPROC_H
 #define __MSMB_PPROC_H
 
@@ -250,3 +254,4 @@ struct msm_camera_v4l2_ioctl_t {
 };
 
 #endif /* __MSMB_PPROC_H */
+#endif /* CONFIG_MSMB_CAMERA_ZTE */

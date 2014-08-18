@@ -1,3 +1,7 @@
+#ifdef CONFIG_MSMB_CAMERA_ZTE
+#include <media/msmb_camera_zte.h>
+#else
+
 #ifndef __LINUX_MSMB_CAMERA_H
 #define __LINUX_MSMB_CAMERA_H
 
@@ -169,3 +173,4 @@ struct msm_v4l2_format_data {
 #define MSM_V4L2_PIX_FMT_STATS_BHST v4l2_fourcc('B', 'H', 'S', 'T')
 
 #endif /* __LINUX_MSMB_CAMERA_H */
+#endif /* CONFIG_MSMB_CAMERA_ZTE */
