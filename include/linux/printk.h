@@ -316,35 +316,4 @@ static inline void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
 
 #endif
 
-//define the module mask here the value is hex
-//the module mask define begin
-#define ZTE_LCD_MASK                 0x0001
-#define ZTE_TOUCH_MASK              0x0002
-#define ZTE_CAMERA_MASK          0x0004
-//.....you can define more below.....only change the name
-#define ZTE_UNDIFINE1_MASK     0x0008
-#define ZTE_UNDIFINE2_MASK     0x0010
-#define ZTE_UNDIFINE3_MASK     0x0020
-#define ZTE_UNDIFINE4_MASK     0x0040   
-#define ZTE_UNDIFINE5_MASK     0x0080
-#define ZTE_UNDIFINE6_MASK     0x0100
-#define ZTE_UNDIFINE7_MASK     0x0200
-#define ZTE_UNDIFINE8_MASK     0x0400
-#define ZTE_UNDIFINE9_MASK     0x0800
-#define ZTE_UNDIFINE10_MASK   0x1000
-#define ZTE_UNDIFINE11_MASK   0x2000
-#define ZTE_UNDIFINE12_MASK   0x4000
-//SOME DO NOT BELONG TO ANY MODULE, YOU CAN USE THIS !
-#define ZTE_DEFAULT_MASK          0x8000 
-//the module mask define end
-extern int zte_log_switch;
-extern int zte_log_mask ;
-
-#define zte_printk(modu_name,fmt, ...) \
-      do{                                 \
-	if(zte_log_switch&&(zte_log_mask&modu_name))          \
-	printk(fmt, ##__VA_ARGS__);    \
-      }while(0)
-
-
 #endif
