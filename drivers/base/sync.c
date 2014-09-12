@@ -400,11 +400,15 @@ struct sync_fence *sync_fence_fdget(int fd)
 {
 	struct file *file = fget(fd);
 
-	if (file == NULL)
+	if (file == NULL) {
+		pr_err("sync_fence: NULL file for fd: %d\n", fd);
 		return NULL;
+	}
 
-	if (file->f_op != &sync_fence_fops)
+	if (file->f_op != &sync_fence_fops) {
+		pr_err("sync_fence: fd %d is not sync fence fd!\n", fd);
 		goto err;
+	}
 
 	return file->private_data;
 
