@@ -4099,7 +4099,7 @@ static int tapan_codec_enable_slimrx(struct snd_soc_dapm_widget *w,
 
 	core = dev_get_drvdata(codec->dev->parent);
 
-	if(core == NULL) {
+	if (core == NULL) {
 		dev_err(codec->dev, "%s: core is null\n",
 				__func__);
 		return -EINVAL;
