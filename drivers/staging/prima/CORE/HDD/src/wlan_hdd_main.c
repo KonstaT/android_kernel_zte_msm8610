@@ -226,6 +226,7 @@ static void hdd_set_multicast_list(struct net_device *dev);
 void hdd_wlan_initial_scan(hdd_adapter_t *pAdapter);
 
 extern int hdd_setBand_helper(struct net_device *dev, tANI_U8* ptr);
+extern int zte_wifi_get_mac_addr(unsigned char *addr);
 
 #if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_CCX) || defined(FEATURE_WLAN_LFR)
 void hdd_getBand_helper(hdd_context_t *pHddCtx, int *pBand);
@@ -8428,7 +8429,10 @@ int hdd_wlan_startup(struct device *dev )
    }
 
    // Get mac addr from platform driver
-   ret = wcnss_get_wlan_mac_address((char*)&mac_addr.bytes);
+   //ret = wcnss_get_wlan_mac_address((char*)&mac_addr.bytes);
+
+   // Get mac addr from ZTE driver
+   ret = zte_wifi_get_mac_addr((unsigned char*)&mac_addr);
 
    if ((0 == ret) && (!vos_is_macaddr_zero(&mac_addr)))
    {
