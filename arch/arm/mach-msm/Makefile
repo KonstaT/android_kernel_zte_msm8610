@@ -195,9 +195,9 @@ ifdef CONFIG_MSM_SUBSYSTEM_RESTART
 	obj-y += ramdump.o
 endif
 obj-$(CONFIG_MSM_SYSMON_COMM) += sysmon.o
-#zte-modified, by haoxiaojie, 20131226, for WI-FI MAC address writen begin 
+#zte-modified, by haoxiaojie, 20131226, for WI-FI MAC address writen begin
 obj-$(CONFIG_MSM_PIL_PRONTO) += board-zte-wifi.o
-#zte-modified, by haoxiaojie, 20131226, for WI-FI MAC address writen end  
+#zte-modified, by haoxiaojie, 20131226, for WI-FI MAC address writen end
 
 #obj-$(CONFIG_CPU_IDLE) += cpuidle.o
 
