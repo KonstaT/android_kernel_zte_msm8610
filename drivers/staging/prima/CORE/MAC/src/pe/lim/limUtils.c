@@ -1745,27 +1745,13 @@ limIsNullSsid( tSirMacSSid *pSsid )
         }
 
 #define ASCII_SPACE_CHARACTER 0x20
-        /* If the first charactes is space, then check if all characters in 
-         * SSID are spaces to consider it as NULL SSID*/
-        if( ASCII_SPACE_CHARACTER == pSsid->ssId[0])
+        /* If the first charactes is space and SSID length is 1
+         * then consider it as NULL SSID*/
+        if ((ASCII_SPACE_CHARACTER == pSsid->ssId[0]) &&
+            (pSsid->length == 1))
         {
-            SsidLength = pSsid->length;
-            pSsidStr = pSsid->ssId;
-            /* check if all the charactes in SSID are spaces*/
-            while ( SsidLength )
-            {
-                if( ASCII_SPACE_CHARACTER != *pSsidStr )
-                    break;
-    
-                pSsidStr++;
-                SsidLength--;
-            }
-    
-            if( 0 == SsidLength )
-            {
-                fNullSsid = true;
-                break;
-            }
+             fNullSsid = true;
+             break;
         }
         else
         {
@@ -5098,7 +5084,6 @@ void limTxComplete( tHalHandle hHal, void *pData )
         if(VOS_IS_STATUS_SUCCESS(vosStatus))
         {
             mHdr = WDA_GET_RX_MAC_HEADER(pRxBd);
-            MTRACE(macTrace(pMac, TRACE_CODE_TX_COMPLETE, NO_SESSION, mHdr->fc.subType);)
 
         }   
     }
@@ -6260,7 +6245,12 @@ tSirMsgQ msgQ;
   msgQ.bodyval = 0;
 
   limLog( pMac, LOGW,
-      FL( "Sending WDA_ADDBA_REQ..." ));
+      FL( "Sending WDA_ADDBA_REQ... Buff size = %d , staId = %d , timeout = %d "
+          "Tid = %d, Direction = %d , Policy = %d, sessionId = %d , baSSN = %d " ),
+           pAddBAParams->baBufferSize, pAddBAParams->staIdx,
+           pAddBAParams->baTimeout, pAddBAParams->baTID,
+           pAddBAParams->baDirection, pAddBAParams->baPolicy,
+           pAddBAParams->sessionId, pAddBAParams->baSSN);
 
   //defer any other message until we get response back.
   SET_LIM_PROCESS_DEFD_MESGS(pMac, false);
@@ -7224,8 +7214,7 @@ void limHandleHeartBeatFailureTimeout(tpAniSirGlobal pMac)
 #endif
                 if (psessionEntry->limMlmState == eLIM_MLM_LINK_ESTABLISHED_STATE)
                 {
-                    if ((!LIM_IS_CONNECTION_ACTIVE(psessionEntry))&&
-                                                  (psessionEntry->limSmeState != eLIM_SME_WT_DISASSOC_STATE))
+                    if (psessionEntry->limSmeState != eLIM_SME_WT_DISASSOC_STATE)
                     {
                         limLog(pMac, LOGE, FL("Probe_hb_failure: for session:%d " ),psessionEntry->peSessionId);
                         /* AP did not respond to Probe Request. Tear down link with it.*/

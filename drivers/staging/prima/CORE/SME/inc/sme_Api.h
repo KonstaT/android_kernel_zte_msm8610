@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -120,6 +120,8 @@ typedef struct _smeConfigParams
 #endif
     tANI_BOOLEAN  fScanOffload;
     tANI_U8  isAmsduSupportInAMPDU;
+    tANI_U32       fEnableDebugLog;
+    tANI_U32      fDeferIMPSTime;
 } tSmeConfigParams, *tpSmeConfigParams;
 
 typedef enum
@@ -459,6 +461,17 @@ eHalStatus sme_ScanGetResult(tHalHandle hHal, tANI_U8 sessionId, tCsrScanResultF
     \return eHalStatus     
   ---------------------------------------------------------------------------*/
 eHalStatus sme_ScanFlushResult(tHalHandle hHal, tANI_U8 sessionId);
+
+/*
+ * ---------------------------------------------------------------------------
+ *  \fn sme_FilterScanResults
+ *  \brief a wrapper function to request CSR to filter the scan results based
+ *   on valid chennel list.
+ *  \return eHalStatus
+ *---------------------------------------------------------------------------
+ */
+eHalStatus sme_FilterScanResults(tHalHandle hHal, tANI_U8 sessionId);
+
 eHalStatus sme_ScanFlushP2PResult(tHalHandle hHal, tANI_U8 sessionId);
 
 /* ---------------------------------------------------------------------------
@@ -899,25 +912,6 @@ eHalStatus sme_CfgSetStr(tHalHandle hHal, tANI_U32 cfgId, tANI_U8 *pStr,
                          tANI_U32 length, tCcmCfgSetCallback callback, 
                          eAniBoolean toBeSaved) ;
 
-
-/* ---------------------------------------------------------------------------
-    \fn sme_GetModifyProfileFields
-    \brief HDD or SME - QOS calls this function to get the current values of 
-    connected profile fields, changing which can cause reassoc.
-    This function must be called after CFG is downloaded and STA is in connected
-    state. Also, make sure to call this function to get the current profile
-    fields before calling the reassoc. So that pModifyProfileFields will have
-    all the latest values plus the one(s) has been updated as part of reassoc
-    request.
-    \param pModifyProfileFields - pointer to the connected profile fields 
-    changing which can cause reassoc
-
-    \return eHalStatus     
-  -------------------------------------------------------------------------------*/
-eHalStatus sme_GetModifyProfileFields(tHalHandle hHal, tANI_U8 sessionId, 
-                                     tCsrRoamModifyProfileFields * pModifyProfileFields);
-
-
 /*--------------------------------------------------------------------------
     \fn sme_SetConfigPowerSave
     \brief  Wrapper fn to change power save configuration in SME (PMC) module.
@@ -1171,6 +1165,18 @@ extern eHalStatus sme_RegisterPowerSaveCheck (
    tANI_BOOLEAN (*checkRoutine) (void *checkContext), void *checkContext);
 
 /* ---------------------------------------------------------------------------
+    \fn sme_Register11dScanDoneCallback
+    \brief  Register a routine of type csrScanCompleteCallback which is
+            called whenever an 11d scan is done
+    \param  hHal - The handle returned by macOpen.
+    \param  callback -  11d scan complete routine to be registered
+    \return eHalStatus
+  ---------------------------------------------------------------------------*/
+extern eHalStatus sme_Register11dScanDoneCallback (
+   tHalHandle hHal,
+   csrScanCompleteCallback);
+
+/* ---------------------------------------------------------------------------
     \fn sme_DeregisterPowerSaveCheck
     \brief  Deregister a power save check routine
     \param  hHal - The handle returned by macOpen.
@@ -1378,6 +1384,36 @@ eHalStatus sme_GetCountryCode(tHalHandle hHal, tANI_U8 *pBuf, tANI_U8 *pbLen);
 
   -------------------------------------------------------------------------------*/
 eHalStatus sme_SetCountryCode(tHalHandle hHal, tANI_U8 *pCountry, tANI_BOOLEAN *pfRestartNeeded);
+
+/* ---------------------------------------------------------------------------
+
+    \fn sme_InitChannels
+
+    \brief Used to initialize CSR channel lists while driver loading
+
+    \param hHal - global pMac structure
+
+    \return eHalStatus  SUCCESS.
+
+                         FAILURE or RESOURCES  The API finished and failed.
+
+ -------------------------------------------------------------------------------*/
+eHalStatus sme_InitChannels(tHalHandle hHal);
+
+
+/* ---------------------------------------------------------------------------
+    \fn sme_InitChannelsForCC
+
+    \brief Used to issue regulatory hint to user
+
+    \param hHal - global pMac structure
+
+    \return eHalStatus  SUCCESS.
+
+                        FAILURE or RESOURCES  The API finished and failed.
+
+ -------------------------------------------------------------------------------*/
+eHalStatus sme_InitChannelsForCC(tHalHandle hHal);
 
 /* ---------------------------------------------------------------------------
     \fn sme_ResetCountryCodeInformation
@@ -1846,17 +1882,6 @@ eHalStatus sme_SetHostOffload (tHalHandle hHal, tANI_U8 sessionId,
 eHalStatus sme_SetKeepAlive (tHalHandle hHal, tANI_U8 sessionId,
                                   tpSirKeepAliveReq pRequest);
 
-
-/* ---------------------------------------------------------------------------
-    \fn sme_AbortMacScan
-    \brief  API to cancel MAC scan.
-    \param  hHal - The handle returned by macOpen.
-    \return VOS_STATUS
-            VOS_STATUS_E_FAILURE - failure
-            VOS_STATUS_SUCCESS  success
-  ---------------------------------------------------------------------------*/
-eHalStatus sme_AbortMacScan(tHalHandle hHal);
-
 /* ----------------------------------------------------------------------------
    \fn sme_GetOperationChannel
    \brief API to get current channel on which STA is parked
@@ -2041,7 +2066,7 @@ tANI_U8 sme_GetConcurrentOperationChannel( tHalHandle hHal );
             VOS_STATUS_E_FAILURE - failure
             VOS_STATUS_SUCCESS  success
   ---------------------------------------------------------------------------*/
-eHalStatus sme_AbortMacScan(tHalHandle hHal);
+eHalStatus sme_AbortMacScan(tHalHandle hHal, eCsrAbortReason reason);
 
 /* ---------------------------------------------------------------------------
     \fn sme_GetCfgValidChannels
@@ -2279,6 +2304,16 @@ eHalStatus sme_p2pGetResultFilter(tHalHandle hHal, tANI_U8 HDDSessionId,
     -------------------------------------------------------------------------*/
 eHalStatus sme_SetMaxTxPower(tHalHandle hHal, tSirMacAddr pBssid, 
                              tSirMacAddr pSelfMacAddress, v_S7_t dB);
+
+/* ---------------------------------------------------------------------------
+    \fn sme_SetMaxTxPowerPerBand
+    \brief  Used to set the Maximum Transmit Power for
+    specific band dynamically. Note: this setting will not persist over reboots
+    \param band
+    \param power to set in dB
+    \- return eHalStatus
+    -------------------------------------------------------------------------*/
+eHalStatus sme_SetMaxTxPowerPerBand(eCsrBand band, v_S7_t db);
 
 /* ---------------------------------------------------------------------------
 
@@ -3171,4 +3206,9 @@ eHalStatus sme_AddChAvoidCallback
    void (*pCallbackfn)(void *pAdapter, void *indParam)
 );
 #endif /* FEATURE_WLAN_CH_AVOID */
+eHalStatus sme_UpdateConnectDebug(tHalHandle hHal, tANI_U32 set_value);
+
+eHalStatus sme_getBcnMissRate(tHalHandle, tANI_U8, void *, void *);
+
+tANI_BOOLEAN  sme_Is11dCountrycode(tHalHandle hHal);
 #endif //#if !defined( __SME_API_H )

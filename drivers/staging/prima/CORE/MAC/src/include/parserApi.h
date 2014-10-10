@@ -66,6 +66,13 @@
 #define IS_24G_CH(__chNum) ((__chNum > 0) && (__chNum < 14))
 #define IS_5G_CH(__chNum) ((__chNum >= 36) && (__chNum <= 165))
 
+#define SIZE_OF_FIXED_PARAM 12
+#define SIZE_OF_TAG_PARAM_NUM 1
+#define SIZE_OF_TAG_PARAM_LEN 1
+#define RSNIEID 0x30
+#define RSNIE_CAPABILITY_LEN 2
+#define DEFAULT_RSNIE_CAP_VAL 0x00
+
 typedef struct sSirCountryInformation
 {
     tANI_U8 countryString[COUNTRY_STRING_LENGTH];
@@ -895,3 +902,8 @@ PopulateDot11fWiderBWChanSwitchAnn(tpAniSirGlobal pMac,
                                    tDot11fIEWiderBWChanSwitchAnn *pDot11f,
                                    tpPESession psessionEntry);
 #endif
+
+tSirRetStatus ValidateAndRectifyIEs(tpAniSirGlobal pMac,
+                                    tANI_U8 *pMgmtFrame,
+                                    tANI_U32 nFrameBytes,
+                                    tANI_U32 *nMissingRsnBytes);

@@ -215,6 +215,12 @@ static void __limInitStatsVars(tpAniSirGlobal pMac)
     // Heart-Beat interval value
     pMac->lim.gLimHeartBeatCount = 0;
 
+    vos_mem_zero(pMac->lim.gLimHeartBeatApMac[0],
+            sizeof(tSirMacAddr));
+    vos_mem_zero(pMac->lim.gLimHeartBeatApMac[1],
+            sizeof(tSirMacAddr));
+    pMac->lim.gLimHeartBeatApMacIndex = 0;
+
     // Statistics to keep track of no. beacons rcvd in heart beat interval
     vos_mem_set(pMac->lim.gLimHeartBeatBeaconStats,
                 sizeof(pMac->lim.gLimHeartBeatBeaconStats), 0);
@@ -583,7 +589,7 @@ static tSirRetStatus __limInitConfig( tpAniSirGlobal pMac )
       limHandleCFGparamUpdate do we want to update this? */
    if(wlan_cfgGetInt(pMac, WNI_CFG_SHORT_PREAMBLE, &val1) != eSIR_SUCCESS)
    {
-      limLog(pMac, LOGP, FL("cfg get short preamble failed"));
+      limLog(pMac, LOGE, FL("cfg get short preamble failed"));
       return eSIR_FAILURE;
    }
 
@@ -775,7 +781,6 @@ limInitialize(tpAniSirGlobal pMac)
     
     vos_trace_setLevel(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR);
 #endif
-    MTRACE(limTraceInit(pMac));
 
     //Initialize the configurations needed by PE
     if( eSIR_FAILURE == __limInitConfig(pMac))
@@ -1041,6 +1046,15 @@ tSirRetStatus peOpen(tpAniSirGlobal pMac, tMacOpenParameters *pMacOpenParam)
         return eSIR_FAILURE;
     }
     pMac->lim.deauthMsgCnt = 0;
+
+    /*
+     * peOpen is successful by now, so it is right time to initialize
+     * MTRACE for PE module. if LIM_TRACE_RECORD is not defined in build file
+     * then nothing will be logged for PE module.
+     */
+#ifdef LIM_TRACE_RECORD
+    MTRACE(limTraceInit(pMac));
+#endif
     return eSIR_SUCCESS;
 }
 
@@ -1636,7 +1650,7 @@ limUpdateOverlapStaParam(tpAniSirGlobal pMac, tSirMacAddr bssId, tpLimProtStaPar
 
     if (i == LIM_PROT_STA_OVERLAP_CACHE_SIZE)
     {
-        PELOG1(limLog(pMac, LOG1, FL("Overlap cache is full"));)
+        PELOG1(limLog(pMac, LOGW, FL("Overlap cache is full"));)
     }
     else
     {
@@ -1735,9 +1749,8 @@ limDetectChangeInApCapabilities(tpAniSirGlobal pMac,
     newChannel = (tANI_U8) pBeacon->channelNumber;
 
     if ( ( false == psessionEntry->limSentCapsChangeNtf ) &&
-        ( ( ( limIsNullSsid(&pBeacon->ssId) ) ||
-          ( ( !limIsNullSsid(&pBeacon->ssId) ) &&
-             ( false == limCmpSSid(pMac, &pBeacon->ssId, psessionEntry) ) ) ) ||
+        ( ( ( !limIsNullSsid(&pBeacon->ssId) ) &&
+             ( false == limCmpSSid(pMac, &pBeacon->ssId, psessionEntry) ) ) ||
           ( (SIR_MAC_GET_ESS(apNewCaps.capabilityInfo) !=
              SIR_MAC_GET_ESS(psessionEntry->limCurrentBssCaps) ) ||
           ( SIR_MAC_GET_PRIVACY(apNewCaps.capabilityInfo) !=

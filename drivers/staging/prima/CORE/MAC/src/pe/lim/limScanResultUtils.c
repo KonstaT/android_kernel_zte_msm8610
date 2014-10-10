@@ -201,7 +201,13 @@ limCollectBssDescription(tpAniSirGlobal pMac,
     pBssDescr->beaconInterval = pBPR->beaconInterval;
     pBssDescr->capabilityInfo = limGetU16((tANI_U8 *) &pBPR->capabilityInfo);
 
-
+     if(!pBssDescr->beaconInterval )
+    {
+			        limLog(pMac, LOGW,
+            FL("Beacon Interval is ZERO, making it to default 100 "
+            MAC_ADDRESS_STR), MAC_ADDR_ARRAY(pHdr->bssId));
+        pBssDescr->beaconInterval= 100;
+    }
     /*
     * There is a narrow window after Channel Switch msg is sent to HAL and before the AGC is shut
     * down and beacons/Probe Rsps can trickle in and we may report the incorrect channel in 5Ghz
@@ -384,10 +390,17 @@ limCheckAndAddBssDescription(tpAniSirGlobal pMac,
     tANI_U8               rxChannelInBD = 0;
 
     tSirMacAddr bssid = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+    tSirMacAddr bssid_zero =  {0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
     tANI_BOOLEAN fFound = FALSE;
     tpSirMacDataHdr3a pHdr;
 
     pHdr = WDA_GET_RX_MPDUHEADER3A((tANI_U8 *)pRxPacketInfo);
+
+    // Check For Null BSSID; Skip in case of P2P.
+    if (vos_mem_compare(bssid_zero, &pHdr->addr3, 6))
+    {
+        return ;
+    }
 
     //Checking if scanning for a particular BSSID
     if ((fScanning) && (pMac->lim.gpLimMlmScanReq)) 
@@ -1164,6 +1177,7 @@ limDeleteCachedScanResults(tpAniSirGlobal pMac)
 {
     tLimScanResultNode    *pNode, *pNextNode;
     tANI_U16 i;
+
     for (i = 0; i < LIM_MAX_NUM_OF_SCAN_RESULTS; i++)
     {
         if ((pNode = pMac->lim.gLimCachedScanHashTable[i]) != NULL)
@@ -1207,6 +1221,7 @@ limDeleteCachedScanResults(tpAniSirGlobal pMac)
 void
 limReInitScanResults(tpAniSirGlobal pMac)
 {
+    limLog(pMac, LOG1, FL("Re initialize scan hash table."));
     limDeleteCachedScanResults(pMac);
     limInitHashTable(pMac);
 
@@ -1285,6 +1300,7 @@ limDeleteCachedLfrScanResults(tpAniSirGlobal pMac)
 void
 limReInitLfrScanResults(tpAniSirGlobal pMac)
 {
+    limLog(pMac, LOG1, FL("Re initialize lfr scan hash table."));
     limDeleteCachedLfrScanResults(pMac);
     limInitLfrHashTable(pMac);
 

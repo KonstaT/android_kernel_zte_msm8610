@@ -953,7 +953,8 @@ limAssocFailureTimerHandler(void *pMacGlobal, tANI_U32 param)
 
 #if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_CCX) || defined(FEATURE_WLAN_LFR)
     if((LIM_REASSOC == param) &&
-       (NULL != pMac->lim.pSessionEntry))
+       (NULL != pMac->lim.pSessionEntry) &&
+       (pMac->lim.pSessionEntry->limMlmState == eLIM_MLM_WT_FT_REASSOC_RSP_STATE))
     {
         limLog(pMac, LOGE, FL("Reassoc timeout happened"));
         if(pMac->lim.reAssocRetryAttempt < LIM_MAX_REASSOC_RETRY_LIMIT)
@@ -1958,7 +1959,7 @@ v_UINT_t limActivateHearBeatTimer(tpAniSirGlobal pMac, tpPESession psessionEntry
 
 #ifdef WLAN_ACTIVEMODE_OFFLOAD_FEATURE
     if(IS_ACTIVEMODE_OFFLOAD_FEATURE_ENABLE)
-       return (status);
+       return (TX_SUCCESS);
 #endif
 
     if(TX_AIRGO_TMR_SIGNATURE == pMac->lim.limTimers.gLimHeartBeatTimer.tmrSignature)

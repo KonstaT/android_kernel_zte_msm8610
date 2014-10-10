@@ -455,6 +455,13 @@ typedef enum
   /* WLAN FW set batch scan request */
   WDI_SET_BATCH_SCAN_REQ                        = 86,
 
+  /*WLAN DAL Set Max Tx Power Per band Request*/
+  WDI_SET_MAX_TX_POWER_PER_BAND_REQ             = 87,
+
+  WDI_UPDATE_CHAN_REQ                           = 88,
+
+  WDI_GET_BCN_MISS_RATE_REQ                     = 89,
+
   WDI_MAX_REQ,
 
   /*Send a suspend Indication down to HAL*/
@@ -747,6 +754,11 @@ typedef enum
 
   WDI_SET_BATCH_SCAN_RESP                       = 85,
 
+  WDI_SET_MAX_TX_POWER_PER_BAND_RSP             = 86,
+
+  WDI_UPDATE_CHAN_RESP                          = 87,
+
+  WDI_GET_BCN_MISS_RATE_RSP                     = 88,
   /*-------------------------------------------------------------------------
     Indications
      !! Keep these last in the enum if possible
@@ -810,6 +822,10 @@ typedef enum
   WDI_BATCHSCAN_RESULT_IND           =  WDI_HAL_IND_MIN + 17,
 
   WDI_HAL_CH_AVOID_IND                 = WDI_HAL_IND_MIN + 18,
+
+  /* print register values indication from FW to Host */
+  WDI_PRINT_REG_INFO_IND               = WDI_HAL_IND_MIN + 19,
+
   WDI_MAX_RESP
 }WDI_ResponseEnumType; 
 
@@ -1113,6 +1129,8 @@ typedef struct
   /* DXE physical addr to be passed down to RIVA. RIVA HAL will use it to program
   DXE when DXE wakes up from power save*/
   unsigned int                dxePhyAddr;
+
+  wpt_boolean                 dxeRingsEmpty;
 
   /*NV download request parameters  */
   WDI_NvDownloadReqParamsType   wdiCachedNvDownloadReq;
@@ -2239,6 +2257,22 @@ WDI_Status WDI_ProcessSetMaxTxPowerReq
 );
 
 /**
+ @brief Process Set Max Tx Power Per Band Request function (called when Main
+        FSM allows it)
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status WDI_ProcessSetMaxTxPowerPerBandReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+/**
  @brief Process Set Tx Power Request function (called when Main
         FSM allows it)
 
@@ -2817,6 +2851,21 @@ WDI_Status WDI_ProcessGetBatchScanReq
 );
 #endif /* FEATURE_WLAN_BATCH_SCAN */
 
+/**
+ @brief WDI_ProcessUpdateChannelParamsReq -
+    Send update channel request to FW
+
+ @param  pWDICtx : wdi context
+         pEventData : indication data
+
+ @see
+ @return success or failure
+*/
+WDI_Status WDI_ProcessUpdateChannelParamsReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
 
 /*=========================================================================
                              Indications
@@ -3479,6 +3528,23 @@ WDI_ProcessSetLinkStateRsp
 );
 
 /**
+ @brief Process Update Channel Rsp function (called when a response is
+        being received over the bus from HAL)
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessUpdateChanRsp
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+/**
  @brief Process Get Stats Rsp function (called when a response is   
         being received over the bus from HAL)
  
@@ -3610,6 +3676,23 @@ WDI_ProcessUpdateProbeRspTemplateRsp
 WDI_Status
 WDI_ProcessSetMaxTxPowerRsp
 ( 
+  WDI_ControlBlockType*          pWDICtx,
+  WDI_EventInfoType*             pEventData
+);
+
+/**
+ @brief Process Set Max Tx Power Per Band Rsp function (called when a response
+        is being received over the bus from HAL)
+
+ @param  pWDICtx:         pointer to the WLAN DAL context
+         pEventData:      pointer to the event information structure
+
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_ProcessSetMaxTxPowerPerBandRsp
+(
   WDI_ControlBlockType*          pWDICtx,
   WDI_EventInfoType*             pEventData
 );
@@ -5533,6 +5616,20 @@ WDI_Status WDI_ProcessSetBatchScanRsp
   WDI_EventInfoType*     pEventData
 );
 
+WDI_Status
+WDI_ProcessGetBcnMissRateReq
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
+WDI_Status
+WDI_ProcessGetBcnMissRateRsp
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
+
 /**
  @brief Process batch scan response from FW
 
@@ -5568,6 +5665,22 @@ WDI_ProcessChAvoidInd
   WDI_EventInfoType*     pEventData
 );
 #endif /* FEATURE_WLAN_CH_AVOID */
+
+/**
+ @brief v -
+
+
+ @param  pWDICtx : wdi context
+         pEventData : indication data
+ @see
+ @return Result of the function call
+*/
+WDI_Status
+WDI_printRegInfo
+(
+  WDI_ControlBlockType*  pWDICtx,
+  WDI_EventInfoType*     pEventData
+);
 
 #endif /*WLAN_QCT_WDI_I_H*/
 

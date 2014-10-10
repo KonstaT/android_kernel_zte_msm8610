@@ -210,7 +210,6 @@ typedef enum tdlsLinkSetupStatus
 
 
 #ifdef LIM_DEBUG_TDLS
-#define TDLS_CASE_RETURN_STRING(x) case (x): return( ((const tANI_U8*)#x) + 8);  /* 8 = remove redundant SIR_MAC_ */
 
 #ifdef FEATURE_WLAN_TDLS
 #define WNI_CFG_TDLS_DISCOVERY_RSP_WAIT             (100)
@@ -230,16 +229,16 @@ const tANI_U8* limTraceTdlsActionString( tANI_U8 tdlsActionCode )
 {
    switch( tdlsActionCode )
    {
-       TDLS_CASE_RETURN_STRING(SIR_MAC_TDLS_SETUP_REQ);
-       TDLS_CASE_RETURN_STRING(SIR_MAC_TDLS_SETUP_RSP);
-       TDLS_CASE_RETURN_STRING(SIR_MAC_TDLS_SETUP_CNF);
-       TDLS_CASE_RETURN_STRING(SIR_MAC_TDLS_TEARDOWN);
-       TDLS_CASE_RETURN_STRING(SIR_MAC_TDLS_PEER_TRAFFIC_IND);
-       TDLS_CASE_RETURN_STRING(SIR_MAC_TDLS_CH_SWITCH_REQ);
-       TDLS_CASE_RETURN_STRING(SIR_MAC_TDLS_CH_SWITCH_RSP);
-       TDLS_CASE_RETURN_STRING(SIR_MAC_TDLS_PEER_TRAFFIC_RSP);
-       TDLS_CASE_RETURN_STRING(SIR_MAC_TDLS_DIS_REQ);
-       TDLS_CASE_RETURN_STRING(SIR_MAC_TDLS_DIS_RSP);
+       CASE_RETURN_STRING(SIR_MAC_TDLS_SETUP_REQ);
+       CASE_RETURN_STRING(SIR_MAC_TDLS_SETUP_RSP);
+       CASE_RETURN_STRING(SIR_MAC_TDLS_SETUP_CNF);
+       CASE_RETURN_STRING(SIR_MAC_TDLS_TEARDOWN);
+       CASE_RETURN_STRING(SIR_MAC_TDLS_PEER_TRAFFIC_IND);
+       CASE_RETURN_STRING(SIR_MAC_TDLS_CH_SWITCH_REQ);
+       CASE_RETURN_STRING(SIR_MAC_TDLS_CH_SWITCH_RSP);
+       CASE_RETURN_STRING(SIR_MAC_TDLS_PEER_TRAFFIC_RSP);
+       CASE_RETURN_STRING(SIR_MAC_TDLS_DIS_REQ);
+       CASE_RETURN_STRING(SIR_MAC_TDLS_DIS_RSP);
    }
    return (const tANI_U8*)"UNKNOWN";
 }
@@ -5442,53 +5441,4 @@ tSirRetStatus limDeleteTDLSPeers(tpAniSirGlobal pMac, tpPESession psessionEntry)
 
     return eSIR_SUCCESS;
 }
-#ifdef FEATURE_WLAN_TDLS_OXYGEN_DISAPPEAR_AP
-/* Get the number of TDLS peer connected in the BSS */
-int limGetTDLSPeerCount(tpAniSirGlobal pMac, tpPESession psessionEntry)
-{
-    int i,tdlsPeerCount = 0;
-    /* Check all the set bit in peerAIDBitmap and return the number of TDLS peer counts */
-    for (i = 0; i < sizeof(psessionEntry->peerAIDBitmap)/sizeof(tANI_U32); i++)
-    {
-        tANI_U32 bitmap;
-        bitmap = psessionEntry->peerAIDBitmap[i];
-        while (bitmap)
-        {
-            tdlsPeerCount++;
-            bitmap >>= 1;
-        }
-    }
-    return tdlsPeerCount;
-}
-
-void limTDLSDisappearAPTrickInd(tpAniSirGlobal pMac, tpDphHashNode pStaDs, tpPESession psessionEntry)
-{
-    tSirMsgQ  mmhMsg;
-    tSirTdlsDisappearAPInd  *pSirTdlsDisappearAPInd;
-
-    pSirTdlsDisappearAPInd = vos_mem_malloc(sizeof(tSirTdlsDisappearAPInd));
-    if ( NULL == pSirTdlsDisappearAPInd )
-    {
-        limLog(pMac, LOGP, FL("AllocateMemory failed for eWNI_SME_TDLS_DEL_ALL_PEER_IND"));
-        return;
-    }
-
-    //messageType
-    pSirTdlsDisappearAPInd->messageType = eWNI_SME_TDLS_AP_DISAPPEAR_IND;
-    pSirTdlsDisappearAPInd->length = sizeof(tSirTdlsDisappearAPInd);
-
-    //sessionId
-    pSirTdlsDisappearAPInd->sessionId = psessionEntry->smeSessionId;
-    pSirTdlsDisappearAPInd->staId = pStaDs->staIndex ;
-    vos_mem_copy( pSirTdlsDisappearAPInd->staAddr,
-                           (tANI_U8 *) pStaDs->staAddr, sizeof(tSirMacAddr));
-
-    mmhMsg.type = eWNI_SME_TDLS_AP_DISAPPEAR_IND;
-    mmhMsg.bodyptr = pSirTdlsDisappearAPInd;
-    mmhMsg.bodyval = 0;
-
-
-    limSysProcessMmhMsgApi(pMac, &mmhMsg, ePROT);
-}
-#endif
 #endif

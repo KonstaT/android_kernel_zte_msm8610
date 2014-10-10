@@ -113,7 +113,9 @@ typedef tANI_U8 tHalIpv4Addr[4];
 #define WLAN_HAL_VERSION_LENGTH  64
 
 #define WLAN_HAL_ROAM_SCAN_MAX_PROBE_SIZE     450
-#define WLAN_HAL_ROAM_SCAN_MAX_CHANNELS       NUM_RF_CHANNELS
+/* 80 is actually NUM_RF_CHANNELS_V2, but beyond V2,
+ * this number will be ignored by FW */
+#define WLAN_HAL_ROAM_SCAN_MAX_CHANNELS       80
 #define WLAN_HAL_ROAM_SCAN_RESERVED_BYTES     56
 
 /* Message types for messages exchanged between WDI and HAL */
@@ -435,6 +437,13 @@ typedef enum
    WLAN_HAL_IP_FORWARD_TABLE_UPDATE_IND     = 232,
 
    WLAN_HAL_AVOID_FREQ_RANGE_IND            = 233,
+
+   /* print register values */
+   WLAN_HAL_PRINT_REG_INFO_IND              = 259, /* Assigned same value that of Master one */
+
+   WLAN_HAL_GET_BCN_MISS_RATE_REQ           = 260,
+   WLAN_HAL_GET_BCN_MISS_RATE_RSP           = 261,
+
   WLAN_HAL_MSG_MAX = WLAN_HAL_MSG_TYPE_MAX_ENUM_SIZE
 }tHalHostMsgType;
 
@@ -4038,9 +4047,9 @@ typedef PACKED_PRE struct PACKED_POST
 typedef PACKED_PRE struct PACKED_POST
 {
     tANI_U8   bssid[6];     /* BSSID */
-    tANI_U8   ssid[32];     /* SSID */
+    tANI_U8   ssid[33];     /* SSID */
     tANI_U8   ch;           /* Channel */
-    tANI_U8   rssi;         /* RSSI or Level */
+    tANI_S8   rssi;         /* RSSI or Level */
     /* Timestamp when Network was found. Used to calculate age based on timestamp in GET_RSP msg header */
     tANI_U32  timestamp;
 } tHalBatchScanNetworkInfo, *tpHalBatchScanNetworkInfo;
@@ -6108,6 +6117,9 @@ typedef enum {
     WLAN_PERIODIC_TX_PTRN  = 28,
     ADVANCE_TDLS           = 29,
     BATCH_SCAN             = 30,
+    FW_IN_TX_PATH          = 31,
+    EXTENDED_NSOFFLOAD_SLOT = 32,
+    UPDATE_CHANNEL_LIST    = 35,
     MAX_FEATURE_SUPPORTED  = 128,
 } placeHolderInCapBitmap;
 
@@ -6781,6 +6793,49 @@ typedef enum {
 #define WLAN_HAL_CHAN_FLAG_DFS         10
 #define WLAN_HAL_CHAN_FLAG_ALLOW_HT    11  /* HT is allowed on this channel */
 #define WLAN_HAL_CHAN_FLAG_ALLOW_VHT   12  /* VHT is allowed on this channel */
+#define WLAN_HAL_CHAN_CHANGE_CAUSE_CSA 13  /* Indicate reason for channel switch */
+
+#define WLAN_HAL_SET_CHANNEL_FLAG(pwlan_hal_update_channel,flag) do { \
+        (pwlan_hal_update_channel)->channel_info |=  (1 << flag);      \
+     } while(0)
+
+#define WLAN_HAL_GET_CHANNEL_FLAG(pwlan_hal_update_channel,flag)   \
+        (((pwlan_hal_update_channel)->channel_info & (1 << flag)) >> flag)
+
+#define WLAN_HAL_SET_CHANNEL_MIN_POWER(pwlan_hal_update_channel,val) do { \
+     (pwlan_hal_update_channel)->reg_info_1 &= 0xffffff00;           \
+     (pwlan_hal_update_channel)->reg_info_1 |= (val&0xff);           \
+     } while(0)
+#define WLAN_HAL_GET_CHANNEL_MIN_POWER(pwlan_hal_update_channel) ((pwlan_hal_update_channel)->reg_info_1 & 0xff )
+
+#define WLAN_HAL_SET_CHANNEL_MAX_POWER(pwlan_hal_update_channel,val) do { \
+     (pwlan_hal_update_channel)->reg_info_1 &= 0xffff00ff;           \
+     (pwlan_hal_update_channel)->reg_info_1 |= ((val&0xff) << 8);    \
+     } while(0)
+#define WLAN_HAL_GET_CHANNEL_MAX_POWER(pwlan_hal_update_channel) ( (((pwlan_hal_update_channel)->reg_info_1) >> 8) & 0xff )
+
+#define WLAN_HAL_SET_CHANNEL_REG_POWER(pwlan_hal_update_channel,val) do { \
+     (pwlan_hal_update_channel)->reg_info_1 &= 0xff00ffff;           \
+     (pwlan_hal_update_channel)->reg_info_1 |= ((val&0xff) << 16);   \
+     } while(0)
+#define WLAN_HAL_GET_CHANNEL_REG_POWER(pwlan_hal_update_channel) ( (((pwlan_hal_update_channel)->reg_info_1) >> 16) & 0xff )
+#define WLAN_HAL_SET_CHANNEL_REG_CLASSID(pwlan_hal_update_channel,val) do { \
+     (pwlan_hal_update_channel)->reg_info_1 &= 0x00ffffff;             \
+     (pwlan_hal_update_channel)->reg_info_1 |= ((val&0xff) << 24);     \
+     } while(0)
+#define WLAN_HAL_GET_CHANNEL_REG_CLASSID(pwlan_hal_update_channel) ( (((pwlan_hal_update_channel)->reg_info_1) >> 24) & 0xff )
+
+#define WLAN_HAL_SET_CHANNEL_ANTENNA_MAX(pwlan_hal_update_channel,val) do { \
+     (pwlan_hal_update_channel)->reg_info_2 &= 0xffffff00;             \
+     (pwlan_hal_update_channel)->reg_info_2 |= (val&0xff);             \
+     } while(0)
+#define WLAN_HAL_GET_CHANNEL_ANTENNA_MAX(pwlan_hal_update_channel) ((pwlan_hal_update_channel)->reg_info_2 & 0xff )
+
+#define WLAN_HAL_SET_CHANNEL_MAX_TX_POWER(pwlan_hal_update_channel,val) do { \
+     (pwlan_hal_update_channel)->reg_info_2 &= 0xffff00ff;              \
+     (pwlan_hal_update_channel)->reg_info_2 |= ((val&0xff)<<8);         \
+     } while(0)
+#define WLAN_HAL_GET_CHANNEL_MAX_TX_POWER(pwlan_hal_update_channel) ( (((pwlan_hal_update_channel)->reg_info_2)>>8) & 0xff )
 
 typedef PACKED_PRE struct PACKED_POST
 {
@@ -6940,6 +6995,47 @@ typedef PACKED_PRE struct PACKED_POST
 #elif defined(__ANI_COMPILER_PRAGMA_PACK)
 #else
 #endif
+
+/*---------------------------------------------------------------------------
+ * WLAN_HAL_PRINT_REG_INFO_IND
+ *--------------------------------------------------------------------------*/
+
+typedef PACKED_PRE struct PACKED_POST
+{
+   uint32 regAddr;
+   uint32 regValue;
+} tHalRegDebugInfo, *tpRegDebugInfo;
+
+typedef PACKED_PRE struct PACKED_POST
+{
+   uint32 regCount;
+   uint32 scenario;
+   uint32 reasonCode;
+} tHalRegDebugInfoParams, *tpRegDebugInfoParams;
+
+typedef PACKED_PRE struct PACKED_POST
+{
+   tHalMsgHeader header;
+   tHalRegDebugInfoParams regParams;
+} tHalRegDebugInfoMsg, *tpRegDebugInfoMsg;
+
+/*---------------------------------------------------------------------------
+ * WLAN_HAL_GET_BCN_MISS_RATE_REQ
+ *--------------------------------------------------------------------------*/
+typedef PACKED_PRE struct PACKED_POST
+{
+   /* Valid STA Idx for per STA stats request */
+   tANI_U8    bssIdx;
+}tHalBcnMissRateReqParams, *tpHalBcnMissRateReqParams;
+
+/*---------------------------------------------------------------------------
+ * WLAN_HAL_GET_BCN_MISS_RATE_RSP
+ *--------------------------------------------------------------------------*/
+typedef PACKED_PRE struct PACKED_POST
+{
+   tANI_U32           status;
+   tANI_U32           bcnMissCnt;
+}tHalBcnMissRateRspParams, *tpHalBcnMissRateRspParams;
 
 #endif /* _WLAN_HAL_MSG_H_ */
 

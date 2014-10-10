@@ -176,7 +176,7 @@ enum eSirHostMsgTypes
 enum {
     SIR_BOOT_MODULE_ID = 1,
     SIR_HAL_MODULE_ID  = 0x10,
-    SIR_CFG_MODULE_ID,
+    SIR_CFG_MODULE_ID = 0x12,
     SIR_LIM_MODULE_ID,
     SIR_ARQ_MODULE_ID,
     SIR_SCH_MODULE_ID,
@@ -354,6 +354,7 @@ typedef enum eSirResultCodes
 #ifdef WLAN_FEATURE_GTK_OFFLOAD
     eSIR_SME_GTK_OFFLOAD_GETINFO_REQ_FAILED,
 #endif // WLAN_FEATURE_GTK_OFFLOAD
+    eSIR_SME_DEAUTH_STATUS,
     eSIR_DONOT_USE_RESULT_CODE = SIR_MAX_ENUM_SIZE    
 } tSirResultCodes;
 
@@ -465,6 +466,15 @@ typedef struct sSirRemainOnChnReq
     tANI_U8  isProbeRequestAllowed;
     tANI_U8  probeRspIe[1];
 }tSirRemainOnChnReq, *tpSirRemainOnChnReq;
+
+/* Structure for vendor specific IE of debug marker frame
+   to debug remain on channel issues */
+typedef struct publicVendorSpecific
+{
+    tANI_U8 category;
+    tANI_U8 elementid;
+    tANI_U8 length;
+} publicVendorSpecific;
 
 typedef struct sSirRegisterMgmtFrame
 {
@@ -907,6 +917,7 @@ typedef struct sSirSmeScanReq
 typedef struct sSirOemDataReq
 {
     tANI_U16              messageType; //eWNI_SME_OEM_DATA_REQ
+    tANI_U16              messageLen;
     tSirMacAddr           selfMacAddr;
     tANI_U8               oemDataReq[OEM_DATA_REQ_SIZE];
 } tSirOemDataReq, *tpSirOemDataReq;
@@ -3673,9 +3684,15 @@ typedef struct
   tSirScanTimer  aTimerValues[SIR_PNO_MAX_SCAN_TIMERS]; 
 } tSirScanTimersType;
 
+/*Pref Net Req status */
+typedef void(*PNOReqStatusCb)(void *callbackContext, VOS_STATUS status);
+
+
 typedef struct sSirPNOScanReq
 {
   tANI_U8             enable;
+  PNOReqStatusCb      statusCallback;
+  void                *callbackContext;
   eSirPNOMode         modePNO;
   tANI_U8             ucNetworksCount; 
   tSirNetworkType     aNetworks[SIR_PNO_MAX_SUPP_NETWORKS];
@@ -4134,16 +4151,6 @@ typedef struct sSirTdlsDelAllPeerInd
    tANI_U16               length;
    tANI_U8                sessionId;     // Session ID
 } tSirTdlsDelAllPeerInd, *tpSirTdlsDelAllPeerInd;
-#ifdef FEATURE_WLAN_TDLS_OXYGEN_DISAPPEAR_AP
-typedef struct sSirTdlsDisappearAPInd
-{
-   tANI_U16               messageType;
-   tANI_U16               length;
-   tANI_U8                sessionId;     // Session ID
-   tANI_U16               staId;
-   tSirMacAddr            staAddr;
-} tSirTdlsDisappearAPInd, *tpSirTdlsDisappearAPInd;
-#endif
 typedef struct sSirMgmtTxCompletionInd
 {
    tANI_U16               messageType;
@@ -4413,6 +4420,7 @@ typedef struct sSirUpdateChanParam
 {
     tANI_U8 chanId;
     tANI_U8 pwr;
+    tANI_BOOLEAN dfsSet;
 } tSirUpdateChanParam, *tpSirUpdateChanParam;
 
 typedef struct sSirUpdateChan
@@ -4560,9 +4568,9 @@ typedef struct
 typedef PACKED_PRE struct PACKED_POST
 {
     tANI_U8   bssid[6];     /* BSSID */
-    tANI_U8   ssid[32];     /* SSID */
+    tANI_U8   ssid[33];     /* SSID */
     tANI_U8   ch;           /* Channel */
-    tANI_U8   rssi;         /* RSSI or Level */
+    tANI_S8   rssi;         /* RSSI or Level */
     /*Timestamp when Network was found. Used to calculate age based on timestamp
       in GET_RSP msg header */
     tANI_U32  timestamp;
@@ -4607,5 +4615,22 @@ typedef struct sSirChAvoidIndType
    tSirChAvoidFreqType avoidFreqRange[SIR_CH_AVOID_MAX_RANGE];
 } tSirChAvoidIndType;
 #endif /* FEATURE_WLAN_CH_AVOID */
+
+typedef void (*pGetBcnMissRateCB)( tANI_S32 bcnMissRate,
+                                   VOS_STATUS status, void *data);
+
+typedef PACKED_PRE struct PACKED_POST
+{
+   tANI_U32   msgLen;
+   tANI_U8    bssid[WNI_CFG_BSSID_LEN];
+   void      *callback;
+   void      *data;
+}tSirBcnMissRateReq;
+
+typedef PACKED_PRE struct PACKED_POST
+{
+    pGetBcnMissRateCB callback;
+    void             *data;
+}tSirBcnMissRateInfo;
 
 #endif /* __SIR_API_H */

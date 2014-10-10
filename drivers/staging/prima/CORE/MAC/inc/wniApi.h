@@ -110,7 +110,7 @@
 
 
 /// Start of Sirius/Host message types
-#define WNI_HOST_MSG_START             0x1400
+#define WNI_HOST_MSG_START             0x1500
 
 enum eWniMsgTypes
 {
@@ -346,9 +346,6 @@ enum eWniMsgTypes
     eWNI_SME_TDLS_DEL_STA_IND,
     eWNI_SME_TDLS_DEL_ALL_PEER_IND,
     eWNI_SME_MGMT_FRM_TX_COMPLETION_IND,
-#ifdef FEATURE_WLAN_TDLS_OXYGEN_DISAPPEAR_AP
-    eWNI_SME_TDLS_AP_DISAPPEAR_IND,
-#endif
     eWNI_SME_TDLS_LINK_ESTABLISH_REQ,
     eWNI_SME_TDLS_LINK_ESTABLISH_RSP,
 #endif
@@ -396,7 +393,7 @@ enum eWniMsgTypes
     eWNI_SME_MSG_TYPES_END
 };
 
-#define WNI_CFG_MSG_TYPES_BEGIN        0x1100
+#define WNI_CFG_MSG_TYPES_BEGIN        0x1200
 
 /*---------------------------------------------------------------------*/
 /* CFG Module Definitions                                              */
