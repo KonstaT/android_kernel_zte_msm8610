@@ -230,6 +230,8 @@ static VOS_STATUS hdd_parse_reassoc_command_data(tANI_U8 *pValue,
 VOS_STATUS hdd_parse_get_cckm_ie(tANI_U8 *pValue, tANI_U8 **pCckmIe, tANI_U8 *pCckmIeLen);
 #endif /* FEATURE_WLAN_CCX && FEATURE_WLAN_CCX_UPLOAD */
 
+extern int zte_wifi_get_mac_addr(unsigned char *addr);
+
 static int hdd_netdev_notifier_call(struct notifier_block * nb,
                                          unsigned long state,
                                          void *ndev)
@@ -7969,7 +7971,10 @@ int hdd_wlan_startup(struct device *dev )
    }
 
    // Get mac addr from platform driver
-   ret = wcnss_get_wlan_mac_address((char*)&mac_addr.bytes);
+   //ret = wcnss_get_wlan_mac_address((char*)&mac_addr.bytes);
+
+   // Get mac addr from ZTE driver
+   ret = zte_wifi_get_mac_addr((unsigned char*)&mac_addr);
 
    if ((0 == ret) && (!vos_is_macaddr_zero(&mac_addr)))
    {
