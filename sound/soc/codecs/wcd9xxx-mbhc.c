@@ -866,9 +866,9 @@ static void wcd9xxx_report_plug(struct wcd9xxx_mbhc *mbhc, int insertion,
 #else
 			pr_debug("%s: Disabling micbias\n", __func__);
 #endif
+			mbhc->micbias_enable = false;
 			mbhc->micbias_enable_cb(mbhc->codec, false,
 						mbhc->mbhc_cfg->micbias);
-			mbhc->micbias_enable = false;
 		}
 		mbhc->zl = mbhc->zr = 0;
 #ifdef OPEN_HEADSET_REPORT_LOG
@@ -903,9 +903,9 @@ static void wcd9xxx_report_plug(struct wcd9xxx_mbhc *mbhc, int insertion,
 #else
 				pr_debug("%s: Disabling micbias\n", __func__);
 #endif
+				mbhc->micbias_enable = false;
 				mbhc->micbias_enable_cb(mbhc->codec, false,
 						mbhc->mbhc_cfg->micbias);
-				mbhc->micbias_enable = false;
 			}
 #ifdef OPEN_HEADSET_REPORT_LOG
 			printk("%s: Reporting removal (%x)\n",
