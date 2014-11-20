@@ -125,7 +125,12 @@ struct msm_mdp_interface {
 				int image_len, int *pipe_ndx);
 	int (*cursor_update)(struct msm_fb_data_type *mfd,
 				struct fb_cursor *cursor);
+#ifdef CONFIG_LCD_KCAL
+	int (*lut_update)(struct msm_fb_data_type *mfd, struct fb_cmap *cmap,
+				bool setup_hw);
+#else
 	int (*lut_update)(struct msm_fb_data_type *mfd, struct fb_cmap *cmap);
+#endif
 	int (*do_histogram)(struct msm_fb_data_type *mfd,
 				struct mdp_histogram *hist);
 	int (*update_ad_input)(struct msm_fb_data_type *mfd);

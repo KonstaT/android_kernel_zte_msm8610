@@ -1546,8 +1546,13 @@ static int mdp3_histo_ioctl(struct msm_fb_data_type *mfd, u32 cmd,
 	return ret;
 }
 
+#ifdef CONFIG_LCD_KCAL
+static int mdp3_ctrl_lut_update(struct msm_fb_data_type *mfd,
+				struct fb_cmap *cmap, bool setup_hw)
+#else
 static int mdp3_ctrl_lut_update(struct msm_fb_data_type *mfd,
 				struct fb_cmap *cmap)
+#endif
 {
 	int rc = 0;
 	struct mdp3_session_data *mdp3_session = mfd->mdp.private1;
@@ -1566,6 +1571,9 @@ static int mdp3_ctrl_lut_update(struct msm_fb_data_type *mfd,
 		return  -EINVAL;
 	}
 
+#ifdef CONFIG_LCD_KCAL
+	if (setup_hw) {
+#endif
 	rc = copy_from_user(r + cmap->start,
 					cmap->red, sizeof(u16)*cmap->len);
 	rc |= copy_from_user(g + cmap->start,
@@ -1574,14 +1582,27 @@ static int mdp3_ctrl_lut_update(struct msm_fb_data_type *mfd,
 					cmap->blue, sizeof(u16)*cmap->len);
 	if (rc)
 		return rc;
+#ifdef CONFIG_LCD_KCAL
+	}
+#endif
 
 	lut_config.lut_enable = 7;
 	lut_config.lut_sel = mdp3_session->lut_sel;
 	lut_config.lut_position = 0;
 	lut_config.lut_dirty = true;
+#ifdef CONFIG_LCD_KCAL
+	if (setup_hw) {
+#endif
 	lut.color0_lut = r;
 	lut.color1_lut = g;
 	lut.color2_lut = b;
+#ifdef CONFIG_LCD_KCAL
+	} else {
+		lut.color0_lut = cmap->red;
+		lut.color1_lut = cmap->green;
+		lut.color2_lut = cmap->blue;
+	}
+#endif
 
 	mutex_lock(&mdp3_session->lock);
 
@@ -1640,6 +1661,170 @@ static int mdp3_overlay_prepare(struct msm_fb_data_type *mfd,
 
 	return rc;
 }
+
+#ifdef CONFIG_LCD_KCAL
+static int update_preset_lcdc_lut(struct msm_fb_data_type *mfd,
+				bool setup_hw, int red, int green, int blue)
+{
+	struct fb_cmap cmap;
+	int ret = 0;
+
+	cmap.start = 0;
+	cmap.len = 256;
+	cmap.transp = NULL;
+
+	cmap.red = (uint16_t *)&(red);
+	cmap.green = (uint16_t *)&(green);
+	cmap.blue = (uint16_t *)&(blue);
+
+	ret = mdp3_ctrl_lut_update(mfd, &cmap, setup_hw);
+	if (ret)
+		pr_err("%s: failed to set lut! %d\n", __func__, ret);
+
+	return ret;
+}
+
+struct kcal_data {
+	int r;
+	int g;
+	int b;
+	int min;
+};
+
+static struct kcal_data lut = {255, 255, 255, 35};
+
+static int kcal_set_values(struct msm_fb_data_type *mfd,
+				int kcal_r, int kcal_g, int kcal_b)
+{
+	lut.r = kcal_r < lut.min ? lut.min : kcal_r;
+	lut.g = kcal_g < lut.min ? lut.min : kcal_g;
+	lut.b = kcal_b < lut.min ? lut.min : kcal_b;
+
+	if (kcal_r < lut.min || kcal_g < lut.min || kcal_b < lut.min)
+		update_preset_lcdc_lut(mfd, false, lut.r, lut.g, lut.b);
+
+	return 0;
+}
+
+static int kcal_get_values(int *kcal_r, int *kcal_g, int *kcal_b)
+{
+	*kcal_r = lut.r;
+	*kcal_g = lut.g;
+	*kcal_b = lut.b;
+	return 0;
+}
+
+static int kcal_set_min(struct msm_fb_data_type *mfd, int kcal_min)
+{
+	lut.min = kcal_min;
+
+	if (lut.min > lut.r || lut.min > lut.g || lut.min > lut.b) {
+		lut.r = lut.r < lut.min ? lut.min : lut.r;
+		lut.g = lut.g < lut.min ? lut.min : lut.g;
+		lut.b = lut.b < lut.min ? lut.min : lut.b;
+		update_preset_lcdc_lut(mfd, false, lut.r, lut.g, lut.b);
+	}
+
+	return 0;
+}
+
+static int kcal_get_min(int *kcal_min)
+{
+	*kcal_min = lut.min;
+	return 0;
+}
+
+static int kcal_refresh_display(struct msm_fb_data_type *mfd)
+{
+	return update_preset_lcdc_lut(mfd, false, lut.r, lut.g, lut.b);
+}
+
+static ssize_t kcal_store(struct device *dev, struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct fb_info *fbi = dev_get_drvdata(dev);
+	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)fbi->par;
+
+	int kcal_r = 0;
+	int kcal_g = 0;
+	int kcal_b = 0;
+
+	if (!count)
+		return -EINVAL;
+
+	sscanf(buf, "%d %d %d", &kcal_r, &kcal_g, &kcal_b);
+
+	if (kcal_r < 0 || kcal_r > 255)
+		return -EINVAL;
+
+	if (kcal_g < 0 || kcal_g > 255)
+		return -EINVAL;
+
+	if (kcal_b < 0 || kcal_b > 255)
+		return -EINVAL;
+
+	kcal_set_values(mfd, kcal_r, kcal_g, kcal_b);
+	kcal_refresh_display(mfd);
+
+	return count;
+}
+
+static ssize_t kcal_show(struct device *dev, struct device_attribute *attr,
+				char *buf)
+{
+	int kcal_r = 0;
+	int kcal_g = 0;
+	int kcal_b = 0;
+
+	kcal_get_values(&kcal_r, &kcal_g, &kcal_b);
+
+	return sprintf(buf, "%d %d %d\n", kcal_r, kcal_g, kcal_b);
+}
+
+static ssize_t kcal_min_store(struct device *dev, struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct fb_info *fbi = dev_get_drvdata(dev);
+	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)fbi->par;
+
+	int kcal_min = 0;
+
+	if (!count)
+		return -EINVAL;
+
+	sscanf(buf, "%d", &kcal_min);
+
+	if (kcal_min < 0 || kcal_min > 255)
+		return -EINVAL;
+
+	kcal_set_min(mfd, kcal_min);
+	kcal_refresh_display(mfd);
+
+	return count;
+}
+
+static ssize_t kcal_min_show(struct device *dev, struct device_attribute *attr,
+				char *buf)
+{
+	int kcal_min = 0;
+
+	kcal_get_min(&kcal_min);
+	return sprintf(buf, "%d\n", kcal_min);
+}
+
+static DEVICE_ATTR(kcal, 0644, kcal_show, kcal_store);
+static DEVICE_ATTR(kcal_min, 0644, kcal_min_show, kcal_min_store);
+
+static struct attribute *kcal_fs_attrs[] = {
+	&dev_attr_kcal.attr,
+	&dev_attr_kcal_min.attr,
+	NULL,
+};
+
+static struct attribute_group kcal_fs_attr_group = {
+	.attrs = kcal_fs_attrs,
+};
+#endif
 
 static int mdp3_ctrl_ioctl_handler(struct msm_fb_data_type *mfd,
 					u32 cmd, void __user *argp)
@@ -1845,6 +2030,14 @@ int mdp3_ctrl_init(struct msm_fb_data_type *mfd)
 	kobject_uevent(&dev->kobj, KOBJ_ADD);
 	pr_debug("vsync kobject_uevent(KOBJ_ADD)\n");
 
+#ifdef CONFIG_LCD_KCAL
+	rc = sysfs_create_group(&dev->kobj, &kcal_fs_attr_group);
+	if (rc) {
+		pr_err("kcal sysfs group creation failed, ret=%d\n", rc);
+		goto init_done;
+	}
+#endif
+
 	if (mdp3_get_cont_spash_en()) {
 		mdp3_session->clk_on = 1;
 		mdp3_ctrl_notifier_register(mdp3_session,
@@ -1857,6 +2050,9 @@ int mdp3_ctrl_init(struct msm_fb_data_type *mfd)
 	}
 
 	mdp3_session->vsync_before_commit = true;
+#ifdef CONFIG_LCD_KCAL
+	update_preset_lcdc_lut(mfd, true, 255, 255, 255);
+#endif
 init_done:
 	if (IS_ERR_VALUE(rc))
 		kfree(mdp3_session);
