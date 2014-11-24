@@ -89,6 +89,7 @@ const v_U8_t hdd_QdiscAcToTlAC[] = {
 #define HDD_TX_TIMEOUT_RATELIMIT_INTERVAL 20*HZ
 #define HDD_TX_TIMEOUT_RATELIMIT_BURST    1
 #define HDD_TX_STALL_SSR_THRESHOLD        5
+#define HDD_TX_STALL_RECOVERY_THRESHOLD HDD_TX_STALL_SSR_THRESHOLD - 2
 
 static DEFINE_RATELIMIT_STATE(hdd_tx_timeout_rs,                 \
                               HDD_TX_TIMEOUT_RATELIMIT_INTERVAL, \
@@ -431,7 +432,12 @@ void hdd_mon_tx_mgmt_pkt(hdd_adapter_t* pAdapter)
        if( (hdr->frame_control & HDD_FRAME_SUBTYPE_MASK)
                                        == HDD_FRAME_SUBTYPE_DEAUTH )
        {
-          hdd_softap_sta_deauth( pAdapter, hdr->addr1 ); 
+          struct tagCsrDelStaParams delStaParams;
+
+          WLANSAP_PopulateDelStaParams(hdr->addr1, eCsrForcedDeauthSta,
+                                 (SIR_MAC_MGMT_DEAUTH >> 4), &delStaParams);
+
+          hdd_softap_sta_deauth(pAdapter, &delStaParams);
           goto mgmt_handled;
        }
        else if( (hdr->frame_control & HDD_FRAME_SUBTYPE_MASK) 
@@ -1078,6 +1084,14 @@ void __hdd_tx_timeout(struct net_device *dev)
    //update last jiffies after the check
    pAdapter->hdd_stats.hddTxRxStats.jiffiesLastTxTimeOut = jiffies;
 
+   if (pAdapter->hdd_stats.hddTxRxStats.continuousTxTimeoutCount ==
+          HDD_TX_STALL_RECOVERY_THRESHOLD)
+   {
+      VOS_TRACE(VOS_MODULE_ID_HDD_SAP_DATA, VOS_TRACE_LEVEL_ERROR,
+                "%s: Request firmware for recovery",__func__);
+      WLANTL_TLDebugMessage(WLANTL_DEBUG_FW_CLEANUP);
+   }
+
    if (pAdapter->hdd_stats.hddTxRxStats.continuousTxTimeoutCount >
        HDD_TX_STALL_SSR_THRESHOLD)
    {
@@ -1098,7 +1112,7 @@ void __hdd_tx_timeout(struct net_device *dev)
    if (__ratelimit(&hdd_tx_timeout_rs))
    {
       hdd_wmm_tx_snapshot(pAdapter);
-      WLANTL_TLDebugMessage(VOS_TRUE);
+      WLANTL_TLDebugMessage(WLANTL_DEBUG_TX_SNAPSHOT);
    }
 
 }

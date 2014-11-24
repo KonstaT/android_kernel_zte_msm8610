@@ -3123,6 +3123,20 @@ v_U16_t vos_chan_to_freq(v_U8_t chanNum)
 
    return (0);
 }
+/* function to tell about if Default country is Non-Zero */
+v_BOOL_t vos_is_nv_country_non_zero()
+{
+    v_BOOL_t  status = VOS_FALSE;
+    if (!(pnvEFSTable->halnv.tables.defaultCountryTable.countryCode[0] == '0' &&
+        pnvEFSTable->halnv.tables.defaultCountryTable.countryCode[1] == '0'))
+    {
+        VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_INFO,
+               "Default Country is Non-Zero\n");
+        return VOS_TRUE;
+    }
+
+    return status ;
+}
 
 #ifdef CONFIG_ENABLE_LINUX_REG
 
@@ -3291,9 +3305,10 @@ VOS_STATUS vos_nv_getRegDomainFromCountryCode( v_REGDOMAIN_t *pRegDomain,
         {
             INIT_COMPLETION(pHddCtx->linux_reg_req);
             regulatory_hint(wiphy, country_code);
+            /* Wait for 300ms*/
             wait_result = wait_for_completion_interruptible_timeout(
                                                             &pHddCtx->linux_reg_req,
-                                                            LINUX_REG_WAIT_TIME);
+                                                            msecs_to_jiffies(LINUX_REG_WAIT_TIME));
 
             /* if the country information does not exist with the kernel,
                then the driver callback would not be called */
@@ -3459,9 +3474,12 @@ int vos_update_nv_table_from_wiphy_band(void *hdd_ctx,
                 }
 
                 // Cap the TX power by the power limits specified in NV for the regdomain
-                wiphy->bands[i]->channels[j].max_power =
-                        MIN(gnvEFSTable->halnv.tables.regDomains[temp_reg_domain].channels[k].pwrLimit,
-                            (tANI_S8) ((wiphy->bands[i]->channels[j].max_power)));
+                if (gnvEFSTable->halnv.tables.regDomains[temp_reg_domain].channels[k].pwrLimit)
+                {
+                    wiphy->bands[i]->channels[j].max_power =
+                           MIN(gnvEFSTable->halnv.tables.regDomains[temp_reg_domain].channels[k].pwrLimit,
+                              (tANI_S8) ((wiphy->bands[i]->channels[j].max_power)));
+                }
 
                 pnvEFSTable->halnv.tables.regDomains[temp_reg_domain].channels[k].pwrLimit =
                     (tANI_S8) ((wiphy->bands[i]->channels[j].max_power));
@@ -3516,9 +3534,12 @@ int vos_update_nv_table_from_wiphy_band(void *hdd_ctx,
                 }
 
                 // Cap the TX power by the power limits specified in NV for the regdomain
-                wiphy->bands[i]->channels[j].max_power =
-                        MIN(gnvEFSTable->halnv.tables.regDomains[temp_reg_domain].channels[k].pwrLimit,
-                            (tANI_S8) ((wiphy->bands[i]->channels[j].max_power)));
+                if (gnvEFSTable->halnv.tables.regDomains[temp_reg_domain].channels[k].pwrLimit)
+                {
+                    wiphy->bands[i]->channels[j].max_power =
+                           MIN(gnvEFSTable->halnv.tables.regDomains[temp_reg_domain].channels[k].pwrLimit,
+                              (tANI_S8) ((wiphy->bands[i]->channels[j].max_power)));
+                }
 
                 /* max_power is in dBm */
                 pnvEFSTable->halnv.tables.regDomains[temp_reg_domain].channels[k].pwrLimit =
@@ -3608,22 +3629,6 @@ static int create_linux_regulatory_entry(struct wiphy *wiphy,
 
 }
 
-/* function to tell about if Default country is Non-Zero */
-v_BOOL_t vos_is_nv_country_non_zero()
-{
-    v_BOOL_t  status = VOS_FALSE;
-    if (!(pnvEFSTable->halnv.tables.defaultCountryTable.countryCode[0] == '0' &&
-        pnvEFSTable->halnv.tables.defaultCountryTable.countryCode[1] == '0'))
-    {
-        VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_INFO,
-               "Default Country is Non-Zero\n");
-        return VOS_TRUE;
-    }
-
-    return status ;
-}
-
-
 /*
  * Function: wlan_hdd_linux_reg_notifier
  * This function is called from cfg80211 core to provide regulatory settings
@@ -3711,7 +3716,11 @@ int wlan_hdd_linux_reg_notifier(struct wiphy *wiphy,
     else if (request->initiator == NL80211_REGDOM_SET_BY_USER ||
              request->initiator ==  NL80211_REGDOM_SET_BY_CORE)
     {
-
+        /* Copy the country of kernel, so that we will not send the reg hint
+         * if kernel country and driver country are same during load.
+         */
+        linux_reg_cc[0] = request->alpha2[0];
+        linux_reg_cc[1] = request->alpha2[1];
         /* first lookup the country in the local database */
 
         if (!(pnvEFSTable->halnv.tables.defaultCountryTable.countryCode[0] == '0' &&
@@ -3762,8 +3771,6 @@ int wlan_hdd_linux_reg_notifier(struct wiphy *wiphy,
         }
 
         cur_reg_domain = temp_reg_domain;
-        linux_reg_cc[0] = country_code[0];
-        linux_reg_cc[1] = country_code[1];
 
         /* now pass the new country information to sme */
         if (request->alpha2[0] == '0' && request->alpha2[1] == '0')

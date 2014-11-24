@@ -50,6 +50,7 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/wireless.h>
+#include <linux/ratelimit.h>
 #include <macTrace.h>
 #include <wlan_hdd_includes.h>
 #include <wlan_btc_svc.h>
@@ -124,6 +125,7 @@ extern void hdd_resume_wlan(struct early_suspend *wlan_suspend);
 static int tdlsOffCh = 1;
 static int tdlsOffChBwOffset = 0;
 #endif
+
 static int ioctl_debug;
 module_param(ioctl_debug, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
@@ -356,6 +358,13 @@ static const hdd_freq_chan_map_t freq_chan_map[] = { {2412, 1}, {2417, 2},
 
 #define WLAN_ADAPTER 0
 #define P2P_ADAPTER  1
+
+#define HDD_IOCTL_RATELIMIT_INTERVAL 20*HZ
+#define HDD_IOCTL_RATELIMIT_BURST 1
+
+static DEFINE_RATELIMIT_STATE(hdd_ioctl_timeout_rs, \
+        HDD_IOCTL_RATELIMIT_INTERVAL,     \
+        HDD_IOCTL_RATELIMIT_BURST);
 
 /*
  * When supplicant sends SETBAND ioctl it queries for channels from
@@ -4976,8 +4985,10 @@ static int __iw_setnone_getint(struct net_device *dev,
 
     if ((WLAN_HDD_GET_CTX(pAdapter))->isLogpInProgress)
     {
-        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL,
+        if (__ratelimit(&hdd_ioctl_timeout_rs)) {
+            VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL,
                                   "%s:LOGP in Progress. Ignore!!!", __func__);
+        }
         return -EBUSY;
     }
 
@@ -5818,7 +5829,7 @@ static int __iw_setnone_getnone(struct net_device *dev,
         {
             hddLog(LOGE, "%s: called %d",__func__, sub_cmd);
             hdd_wmm_tx_snapshot(pAdapter);
-            WLANTL_TLDebugMessage(VOS_TRUE);
+            WLANTL_TLDebugMessage(WLANTL_DEBUG_TX_SNAPSHOT);
             break;
         }
 
@@ -6268,6 +6279,10 @@ static int __iw_add_tspec(struct net_device *dev,
 
    tSpec.ts_info.burst_size_defn = params[HDD_WLAN_WMM_PARAM_BURST_SIZE_DEFN];
 
+   // Save the expected UAPSD settings by application, this will be needed
+   // when re-negotiating UAPSD settings during BT Coex cases.
+   tSpec.expec_psb_byapp = params[HDD_WLAN_WMM_PARAM_APSD];
+
    // validate the ts info ack policy
    switch (params[HDD_WLAN_WMM_PARAM_ACK_POLICY])
    {
@@ -6574,6 +6589,11 @@ static int __iw_set_dynamic_mcbc_filter(struct net_device *dev,
                 return -EINVAL;
             }
 
+            if (VOS_TRUE == pHddCtx->sus_res_mcastbcast_filter_valid)
+            {
+                pHddCtx->sus_res_mcastbcast_filter =
+                         pRequest->mcastBcastFilterSetting;
+            }
         }
     }
 
@@ -6634,6 +6654,13 @@ static int __iw_clear_dynamic_mcbc_filter(struct net_device *dev,
             vos_mem_free(wlanRxpFilterParam);
             return -EINVAL;
         }
+
+        if (VOS_TRUE == pHddCtx->sus_res_mcastbcast_filter_valid)
+        {
+            pHddCtx->sus_res_mcastbcast_filter =
+                     pHddCtx->cfg_ini->mcastBcastFilterSetting;
+        }
+
     }
     return 0;
 }
@@ -7947,8 +7974,13 @@ int hdd_setBand(struct net_device *dev, u8 ui_band)
         }
         else
         {
+#ifdef CONFIG_ENABLE_LINUX_REG
            vos_update_nv_table_from_wiphy_band((void *)pHddCtx,
                      (void *)pHddCtx->wiphy, (eCsrBand)band);
+#else
+           wlan_hdd_cfg80211_update_band( pHddCtx->wiphy, (eCsrBand)band );
+#endif
+
         }
         pScanInfo =  &pHddCtx->scan_info;
         if ((pScanInfo != NULL) && pHddCtx->scan_info.mScanPending)

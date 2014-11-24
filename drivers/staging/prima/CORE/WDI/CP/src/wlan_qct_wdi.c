@@ -14680,7 +14680,7 @@ WDI_ProcessHostOffloadReq
                             &pBSSSes);
    if ( NULL == pBSSSes )
    {
-       WPAL_TRACE( eWLAN_MODULE_DAL_CTRL, eWLAN_PAL_TRACE_LEVEL_ERROR,
+       WPAL_TRACE( eWLAN_MODULE_DAL_CTRL, eWLAN_PAL_TRACE_LEVEL_WARN,
                  " %s : Association for this BSSID does not exist " MAC_ADDRESS_STR,
                  __func__, MAC_ADDR_ARRAY(pwdiHostOffloadParams->wdiHostOffloadInfo.bssId));
        goto fail;
@@ -22118,6 +22118,10 @@ WDI_SendMsg
   {
      /*Inform upper stack layers that a transport fatal error occurred*/
      WDI_DetectedDeviceError(pWDICtx, WDI_ERR_TRANSPORT_FAILURE);
+     if (eWLAN_PAL_STATUS_E_FAILURE == ret)
+     {
+         wdiStatus = WDI_STATUS_DEV_INTERNAL_FAILURE;
+     }
   }
 
   return wdiStatus;
