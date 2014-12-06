@@ -83,6 +83,10 @@
 
 //Macro to disable split scan
 #define SME_DISABLE_SPLIT_SCAN   255
+
+//Macro to indicate invalid no of tspecs
+#define INVALID_TSPEC 100
+
 /*-------------------------------------------------------------------------- 
   Type declarations
   ------------------------------------------------------------------------*/
@@ -1602,6 +1606,7 @@ eHalStatus sme_SetCountryCode(tHalHandle hHal, tANI_U8 *pCountry, tANI_BOOLEAN *
 eHalStatus sme_InitChannels(tHalHandle hHal);
 
 
+#ifdef CONFIG_ENABLE_LINUX_REG
 /* ---------------------------------------------------------------------------
     \fn sme_InitChannelsForCC
 
@@ -1616,6 +1621,7 @@ eHalStatus sme_InitChannels(tHalHandle hHal);
 
  -------------------------------------------------------------------------------*/
 eHalStatus sme_InitChannelsForCC(tHalHandle hHal, driver_load_type init);
+#endif
 
 /* ---------------------------------------------------------------------------
     \fn sme_ResetCountryCodeInformation
