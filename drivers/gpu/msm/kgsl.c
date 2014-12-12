@@ -1807,16 +1807,13 @@ void kgsl_cmdbatch_destroy(struct kgsl_cmdbatch *cmdbatch)
 	list_for_each_entry_safe(event, tmp, &cancel_synclist, node) {
 
 		if (event->type == KGSL_CMD_SYNCPOINT_TYPE_TIMESTAMP) {
-			struct kgsl_device *device = cmdbatch->device;
 			/*
 			 * Timestamp events are guaranteed to signal
 			 * when canceled
 			 */
-			kgsl_mutex_lock(&device->mutex, &device->mutex_owner);
-			kgsl_cancel_event(device, event->context,
+			kgsl_cancel_event(cmdbatch->device, event->context,
 				event->timestamp, kgsl_cmdbatch_sync_func,
 				event);
-			kgsl_mutex_unlock(&device->mutex, &device->mutex_owner);
 		} else if (event->type == KGSL_CMD_SYNCPOINT_TYPE_FENCE) {
 			/* Put events that are successfully canceled */
 			if (kgsl_sync_fence_async_cancel(event->handle))
@@ -2314,8 +2311,11 @@ free_cmdbatch:
 	 * -EPROTO is a "success" error - it just tells the user that the
 	 * context had previously faulted
 	 */
-	if (result && result != -EPROTO)
+	if (result && result != -EPROTO) {
+		kgsl_mutex_lock(&device->mutex, &device->mutex_owner);
 		kgsl_cmdbatch_destroy(cmdbatch);
+		kgsl_mutex_unlock(&device->mutex, &device->mutex_owner);
+	}
 
 done:
 	kgsl_context_put(context);
@@ -2366,8 +2366,11 @@ free_cmdbatch:
 	 * -EPROTO is a "success" error - it just tells the user that the
 	 * context had previously faulted
 	 */
-	if (result && result != -EPROTO)
+	if (result && result != -EPROTO) {
+		kgsl_mutex_lock(&device->mutex, &device->mutex_owner);
 		kgsl_cmdbatch_destroy(cmdbatch);
+		kgsl_mutex_unlock(&device->mutex, &device->mutex_owner);
+	}
 
 done:
 	kgsl_context_put(context);
