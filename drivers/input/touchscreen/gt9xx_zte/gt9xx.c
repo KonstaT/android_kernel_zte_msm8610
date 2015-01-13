@@ -162,6 +162,7 @@ static s8 gtp_enter_doze(struct goodix_ts_data *ts);
 
 static u8 chip_gt9xxs = 0;  // true if ic is gt9xxs, like gt915s
 u8 grp_cfg_version = 0;
+atomic_t gt_keypad_enable;
 
 /*******************************************************
 Function:
@@ -228,6 +229,46 @@ switch (proc_fw_infomation[0]){
 	*start = page + off;
 	return ((count < len - off) ? count : len - off);
 }
+
+static int keypad_enable_read(char *page, char **start, off_t off,
+		int count, int *eof, void *data)
+{
+	return sprintf(page, "%d\n", atomic_read(&gt_keypad_enable));
+}
+
+static int keypad_enable_write(struct file *file, const char __user *buffer,
+		unsigned long count, void *data)
+{
+	char buf[10];
+	unsigned int val = 0;
+	int i = 0;
+	struct goodix_ts_data *ts = i2c_get_clientdata(i2c_connect_client);
+
+	if (count > 10)
+		return count;
+
+	if (copy_from_user(buf, buffer, count)) {
+		printk(KERN_ERR "%s: read proc input error.\n", __func__);
+		return count;
+	}
+
+	sscanf(buf, "%d", &val);
+	val = (val == 0 ? 0 : 1);
+	atomic_set(&gt_keypad_enable, val);
+	if (val) {
+		for (i = 0; i < GTP_MAX_KEY_NUM; i++) {
+			set_bit(touch_key_array[i], ts->input_dev->keybit);
+		}
+	} else {
+		for (i = 0; i < GTP_MAX_KEY_NUM; i++) {
+			clear_bit(touch_key_array[i], ts->input_dev->keybit);
+		}
+	}
+	input_sync(ts->input_dev);
+
+	return count;
+}
+
 int gtp_i2c_read(struct i2c_client *client, u8 *buf, int len)
 {
 //	struct goodix_ts_data *ts = i2c_get_clientdata(client);
@@ -724,6 +765,7 @@ static void goodix_ts_work_func(struct work_struct *work)
 	}
 
 #if GTP_HAVE_TOUCH_KEY
+	if (atomic_read(&gt_keypad_enable)) {
 	key_value = point_data[3 + 8 * touch_num];
 
 	if (key_value || pre_key) {
@@ -745,6 +787,7 @@ static void goodix_ts_work_func(struct work_struct *work)
 		}
 		touch_num = 0;
 		pre_touch = 0;
+	}
 	}
 #endif
 	pre_key = key_value;
@@ -1735,6 +1778,7 @@ static int gtp_request_input_dev(struct goodix_ts_data *ts)
 #endif
 
 #if GTP_HAVE_TOUCH_KEY
+	atomic_set(&gt_keypad_enable, 1);
 	for (index = 0; index < GTP_MAX_KEY_NUM; index++) {
 		input_set_capability(ts->input_dev,
 				EV_KEY, touch_key_array[index]);
@@ -2723,6 +2767,14 @@ Output:
 		//refresh->write_proc = proc_write_val;
 	}  
 	//haoweiwei add 20131126 for proc end
+
+	refresh = create_proc_entry("driver/ts_keypad_enable", 0644, NULL);
+	if (refresh) {
+		refresh->data = NULL;
+		refresh->read_proc = keypad_enable_read;
+		refresh->write_proc = keypad_enable_write;
+	}
+
 #if GTP_ESD_PROTECT
 	gtp_esd_switch(client, SWITCH_ON);
 #endif
