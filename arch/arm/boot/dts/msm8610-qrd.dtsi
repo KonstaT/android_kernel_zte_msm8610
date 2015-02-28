@@ -89,28 +89,26 @@
 		status = "ok";
 	};
 
-//[ECID:000000] ZTEBSP wanghaifei 20130905 start, for sensor
 	i2c@f9925000 { /* BLSP-1 QUP-3 */
 		kionix@f {
-			compatible = "kionix,kxtf9";
+			compatible = "kionix,kxtj9";
 			reg = <0x0f>;
-			//interrupt-parent = <&msmgpio>;
-			//interrupts = <81 0x2>;
+			interrupt-parent = <&msmgpio>;
+			interrupts = <81 0x2>;
 			vdd-supply = <&pm8110_l19>;
 			vio-supply = <&pm8110_l14>;
-			kionix,gpio-irq1 = <&msmgpio 81 0>;
-			kionix,gpio-irq2 = <&msmgpio 82 0>;
 			kionix,min-interval = <5>;
-			kionix,poll-interval = <200>;
-			kionix,axis-map-x = <0>;
-			kionix,axis-map-y = <1>;
+			kionix,init-interval = <200>;
+			kionix,axis-map-x = <1>;
+			kionix,axis-map-y = <0>;
 			kionix,axis-map-z = <2>;
 			kionix,g-range = <2>;
-			//kionix,negate-x;
-			//kionix,negate-y;
-			//kionix,negate-z;
+			kionix,negate-x;
+			kionix,negate-y;
+			kionix,negate-z;
 			kionix,res-12bit;
 		};
+//[ECID:000000] ZTEBSP wanghaifei 20130905 start, for sensor
 		lis3dh@19 {
 			compatible = "st,lis3dh";
 			reg = <0x19>;
@@ -130,14 +128,6 @@
 			//st,negate-y;
 			//st,negate-z;
 		};
-		ak09911@d {
-			compatible = "akm,ak09911";
-			reg = <0x0d>;
-			vdd-supply = <&pm8110_l19>;
-			vio-supply = <&pm8110_l14>;
-			akm,layout = <3>;
-			akm,gpio-rstn = <&msmgpio 58 0>;
-		};
 		taos@39 {
 			compatible = "taos,tmd277x";
 			reg = <0x39>;
@@ -145,8 +135,8 @@
 			vio-supply = <&pm8110_l14>;
 			gpios = <&msmgpio 80 0>;
 		};
-	};
 //[ECID:000000] ZTEBSP wanghaifei 20130905 end, for sensor
+	};
 
 	flashlight {
 		compatible = "qcom,leds-gpio-flash";
