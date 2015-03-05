@@ -2603,6 +2603,8 @@ Output:
 {
 	struct goodix_ts_platform_data *pdata;
 	struct goodix_ts_data *ts;
+	struct proc_dir_entry *proc_entry;
+	struct proc_dir_entry *procdir = proc_mkdir("touchscreen", NULL);
 	u16 version_info;
 	int ret = -1;
     printk("haoweiwei welcome to goodix!!!\n");
@@ -2768,11 +2770,11 @@ Output:
 	}  
 	//haoweiwei add 20131126 for proc end
 
-	refresh = create_proc_entry("driver/ts_keypad_enable", 0644, NULL);
-	if (refresh) {
-		refresh->data = NULL;
-		refresh->read_proc = keypad_enable_read;
-		refresh->write_proc = keypad_enable_write;
+	proc_entry = create_proc_entry("keypad_enable", 0644, procdir);
+	if (proc_entry) {
+		proc_entry->data = NULL;
+		proc_entry->read_proc = keypad_enable_read;
+		proc_entry->write_proc = keypad_enable_write;
 	}
 
 #if GTP_ESD_PROTECT
