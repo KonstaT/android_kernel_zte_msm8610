@@ -714,4 +714,28 @@ config SENSORS_CAPELLA_CM36283
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called CM36283.
+
+#[ECID:000000] ZTEBSP wanghaifei start 20120529, add support for light sensor
+config INPUT_LIGHTSENSOR_TAOS
+        tristate "taos light&proximity sensor tmd2771"
+        depends on I2C 
+        default n
+        help
+          Say Y if you want to support tmd2771 light&proximity sensor
+
+config INPUT_LIGHTSENSOR_LTR558
+        tristate "LiteOn light&proximity sensor ltr558"
+        depends on I2C 
+        default n
+        help
+          Say Y if you want to support ltr558 light&proximity sensor
+
+config INPUT_LIGHTSENSOR_SENSORTEK
+        tristate "taos light&proximity sensor stk3x1x"
+        depends on I2C 
+        default n
+        help
+          Say Y if you want to support stk3x1x light&proximity sensor
+
+#[ECID:000000] ZTEBSP wanghaifei end 20120529
 endif

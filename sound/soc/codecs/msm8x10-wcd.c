@@ -1,4 +1,4 @@
-/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -9,6 +9,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
+#define USE_SPK_RECEIVER_SWITCH_EXT_GPIO 93
+
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/firmware.h>
@@ -49,6 +52,8 @@
 #define NUM_INTERPOLATORS	3
 #define BITS_PER_REG		8
 #define MSM8X10_WCD_TX_PORT_NUMBER	4
+
+#define DAPM_MICBIAS_EXTERNAL_STANDALONE "MIC BIAS External Standalone"
 
 #define MSM8X10_WCD_I2S_MASTER_MODE_MASK	0x08
 #define MSM8X10_DINO_CODEC_BASE_ADDR		0xFE043000
@@ -1132,7 +1137,8 @@ static const struct snd_kcontrol_new msm8x10_wcd_snd_controls[] = {
 		       0, 12, 1, line_gain),
 	SOC_SINGLE_TLV("HPHR Volume", MSM8X10_WCD_A_RX_HPH_R_GAIN,
 		       0, 12, 1, line_gain),
-
+	SOC_SINGLE_TLV("ADC1 Volume", MSM8X10_WCD_A_TX_1_EN, 2, 19, 0, analog_gain),
+	SOC_SINGLE_TLV("ADC2 Volume", MSM8X10_WCD_A_TX_2_EN, 2, 19, 0, analog_gain),
 	SOC_SINGLE_S8_TLV("RX1 Digital Volume",
 			  MSM8X10_WCD_A_CDC_RX1_VOL_CTL_B2_CTL,
 			  -84, 40, digital_gain),
@@ -1407,7 +1413,10 @@ static int msm8x10_wcd_put_dec_enum(struct snd_kcontrol *kcontrol,
 	switch (decimator) {
 	case 1:
 	case 2:
-			adc_dmic_sel = 0x0;
+			if ((dec_mux == 3) || (dec_mux == 4))
+				adc_dmic_sel = 0x1;
+			else
+				adc_dmic_sel = 0x0;
 		break;
 	default:
 		dev_err(codec->dev, "%s: Invalid Decimator = %u\n",
@@ -1643,6 +1652,8 @@ static int msm8x10_wcd_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 
 		/* Always pull up TxFe for TX2 to Micbias */
 		snd_soc_update_bits(codec, micb_int_reg, 0x04, 0x04);
+		snd_soc_update_bits(codec, MSM8X10_WCD_A_MICB_1_CTL,
+					0x80, 0x80);
 		break;
 	case SND_SOC_DAPM_POST_PMU:
 		usleep_range(20000, 20100);
@@ -1650,6 +1661,8 @@ static int msm8x10_wcd_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 		wcd9xxx_resmgr_notifier_call(&msm8x10_wcd->resmgr, e_post_on);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
+		snd_soc_update_bits(codec, MSM8X10_WCD_A_MICB_1_CTL,
+					0x80, 0x00);
 		/* Let MBHC module know so micbias switch to be off */
 		wcd9xxx_resmgr_notifier_call(&msm8x10_wcd->resmgr, e_post_off);
 
@@ -2289,17 +2302,26 @@ static struct snd_soc_dai_driver msm8x10_wcd_i2s_dai[] = {
 static int msm8x10_wcd_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+	printk("%s: ear %s, %d. %s", __func__, (event ==SND_SOC_DAPM_POST_PMU)?"enabling":"disabling", USE_SPK_RECEIVER_SWITCH_EXT_GPIO, "\n");
+#endif
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
 		dev_dbg(w->codec->dev,
 			"%s: Sleeping 20ms after enabling EAR PA\n",
 			__func__);
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+		gpio_direction_output(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, 1);
+#endif
 		msleep(20);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		dev_dbg(w->codec->dev,
 			"%s: Sleeping 20ms after disabling EAR PA\n",
 			__func__);
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+		gpio_direction_output(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, 0);
+#endif
 		msleep(20);
 		break;
 	}
@@ -2309,10 +2331,14 @@ static int msm8x10_wcd_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 static const struct snd_soc_dapm_widget msm8x10_wcd_dapm_widgets[] = {
 	/*RX stuff */
 	SND_SOC_DAPM_OUTPUT("EAR"),
-
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+	SND_SOC_DAPM_PGA_E("EAR PA", MSM8X10_WCD_A_RX_EAR_EN, 4, 0, NULL, 0,
+			msm8x10_wcd_codec_enable_ear_pa, SND_SOC_DAPM_POST_PMU|
+			SND_SOC_DAPM_POST_PMD),
+#else
 	SND_SOC_DAPM_PGA_E("EAR PA", MSM8X10_WCD_A_RX_EAR_EN, 4, 0, NULL, 0,
 			msm8x10_wcd_codec_enable_ear_pa, SND_SOC_DAPM_POST_PMU),
-
+#endif
 	SND_SOC_DAPM_MIXER("DAC1", MSM8X10_WCD_A_RX_EAR_EN, 6, 0, dac1_switch,
 		ARRAY_SIZE(dac1_switch)),
 
@@ -2471,6 +2497,11 @@ static const struct snd_soc_dapm_widget msm8x10_wcd_dapm_widgets[] = {
 		MSM8X10_WCD_A_MICB_1_CTL, 7, 0,
 		msm8x10_wcd_codec_enable_micbias, SND_SOC_DAPM_PRE_PMU |
 		SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
+	SND_SOC_DAPM_MICBIAS_E(DAPM_MICBIAS_EXTERNAL_STANDALONE,
+		MSM8X10_WCD_A_MICB_1_CTL,
+		7, 0, msm8x10_wcd_codec_enable_micbias,
+		SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
+		SND_SOC_DAPM_POST_PMD),
 
 	SND_SOC_DAPM_ADC_E("ADC1", NULL, MSM8X10_WCD_A_TX_1_EN, 7, 0,
 		msm8x10_wcd_codec_enable_adc, SND_SOC_DAPM_PRE_PMU |
@@ -2720,6 +2751,30 @@ static int msm8x10_wcd_enable_ext_mb_source(struct snd_soc_codec *codec,
 			 __func__, turn_on ? "Enabled" : "Disabled");
 
 	return ret;
+}
+
+static int msm8x10_wcd_enable_mbhc_micbias(struct snd_soc_codec *codec,
+	 bool enable)
+{
+	int rc;
+
+	if (enable)
+		rc = snd_soc_dapm_force_enable_pin(&codec->dapm,
+			DAPM_MICBIAS_EXTERNAL_STANDALONE);
+	else
+		rc = snd_soc_dapm_disable_pin(&codec->dapm,
+			DAPM_MICBIAS_EXTERNAL_STANDALONE);
+	snd_soc_dapm_sync(&codec->dapm);
+
+	snd_soc_update_bits(codec, WCD9XXX_A_MICB_1_CTL,
+		0x80, enable ? 0x80 : 0x00);
+	if (rc)
+		pr_debug("%s: Failed to force %s micbias", __func__,
+			enable ? "enable" : "disable");
+	else
+		pr_debug("%s: Trying force %s micbias", __func__,
+			enable ? "enable" : "disable");
+	return rc;
 }
 
 static void msm8x10_wcd_micb_internal(struct snd_soc_codec *codec, bool on)
@@ -3204,7 +3259,8 @@ static int msm8x10_wcd_codec_probe(struct snd_soc_codec *codec)
 
 	ret = wcd9xxx_mbhc_init(&msm8x10_wcd_priv->mbhc,
 				&msm8x10_wcd_priv->resmgr,
-				codec, NULL, &mbhc_cb, &cdc_intr_ids,
+				codec, msm8x10_wcd_enable_mbhc_micbias,
+				&mbhc_cb, &cdc_intr_ids,
 				HELICON_MCLK_CLK_9P6MHZ, true);
 	if (ret) {
 		dev_err(msm8x10_wcd->dev, "%s: Failed to initialize mbhc\n",
@@ -3706,12 +3762,27 @@ static int __init msm8x10_wcd_codec_init(void)
 	if (ret != 0)
 		pr_err("%s: Failed to add msm8x10 wcd I2C driver - error %d\n",
 		       __func__, ret);
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+	if (USE_SPK_RECEIVER_SWITCH_EXT_GPIO >= 0) {
+		ret = gpio_request(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, "SPK_RECEIVER_SWITCH_EXT_GPIO");
+		if (ret) {
+			pr_err("%s: gpio_request failed for SPK_RECEIVER_SWITCH_EXT_GPIO.\n",
+				__func__);
+			return -EINVAL;
+		}
+		gpio_direction_output(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, 0);
+	}
+#endif
 	return ret;
 }
 
 static void __exit msm8x10_wcd_codec_exit(void)
 {
 	i2c_del_driver(&msm8x10_wcd_i2c_driver);
+#if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
+	if (gpio_is_valid(USE_SPK_RECEIVER_SWITCH_EXT_GPIO))
+		gpio_free(USE_SPK_RECEIVER_SWITCH_EXT_GPIO);
+#endif
 }
 
 

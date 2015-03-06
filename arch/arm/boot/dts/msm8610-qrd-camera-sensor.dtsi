@@ -82,5 +82,118 @@
 		qcom,cci-master = <0>;
 		status = "ok";
 	};
+   /*ZTEBSP yuxin add for P810E06 use GC2235,2013.09.03 ++*/
+   /*yuxin modify gc2235 i2c addr to 0x76,avoiding the same with t4k28,2013.10.29*/
+	qcom,camera@76 {
+		compatible = "qcom,gc2235";
+		reg = <0x76>;//0x78
+		qcom,slave-id = <0x78 0xf0 0x2235>;
+		qcom,csiphy-sd-index = <0>;
+		qcom,csid-sd-index = <0>;
+		qcom,mount-angle = <90>; //90 yuxin modify for PV version cam test,2013.11.18
+		qcom,sensor-name = "gc2235";
+		cam_vdig-supply = <&pm8110_l14>;
+		cam_vana-supply = <&pm8110_l19>;
+		cam_vio-supply = <&pm8110_l14>;
+		qcom,cam-vreg-name = "cam_vdig", "cam_vio", "cam_vana";
+		qcom,cam-vreg-type = <0 0 0>; //0 for LDO and 1 for LVS
+		qcom,cam-vreg-min-voltage = <1800000 1800000 2850000>;
+		qcom,cam-vreg-max-voltage = <1800000 1800000 2850000>;
+		qcom,cam-vreg-op-mode = <200000 200000 80000>;
+		qcom,gpio-no-mux = <0>;
+		gpios = <&msmgpio 13 0>,
+				<&msmgpio 21 0>,
+				<&msmgpio 20 0>;
+		qcom,gpio-reset = <1>;
+		qcom,gpio-standby = <2>;
+		qcom,gpio-req-tbl-num = <0 1 2>;
+		qcom,gpio-req-tbl-flags = <1 0 0>;// 1-IN,0-OUT
+		qcom,gpio-req-tbl-label = "CAMIF_MCLK",
+				"CAM_RESET",
+				"CAM_STANDBY";
+		qcom,csi-lane-assign = <0xe4>;
+		qcom,csi-lane-mask = <0x3>;
+		qcom,sensor-position = <0>;  //0-back ,1-front
+		qcom,sensor-mode = <0>; //0-back 2D
+		qcom,sensor-type = <0>; //0-raw,1-yuv
+		qcom,cci-master = <0>;
+		status = "ok";
+	};
+  /*ZTEBSP yuxin add for P810E06 use GC2235,2013.09.03 --*/
+     
+  /*ZTEBSP yuxin add for P821a10 use T4K28,2013.10.23 ++*/
+  qcom,camera@78 {
+		compatible = "qcom,t4k28";
+		reg = <0x78>;
+		qcom,slave-id = <0x78 0x3000 0x08>;
+		qcom,csiphy-sd-index = <0>;
+		qcom,csid-sd-index = <0>;
+		qcom,mount-angle = <270>;  //90,yuxin modify for PV version cam test,2013.11.18
+		qcom,sensor-name = "t4k28";
+		cam_vdig-supply = <&pm8110_l14>;
+		cam_vana-supply = <&pm8110_l19>;
+		cam_vio-supply = <&pm8110_l14>;
+		qcom,cam-vreg-name = "cam_vdig", "cam_vio", "cam_vana";
+		qcom,cam-vreg-type = <0 0 0>; //0 for LDO and 1 for LVS
+		qcom,cam-vreg-min-voltage = <1800000 1800000 2850000>;
+		qcom,cam-vreg-max-voltage = <1800000 1800000 2850000>;
+		qcom,cam-vreg-op-mode = <200000 200000 80000>;
+		qcom,gpio-no-mux = <0>;
+		gpios = <&msmgpio 13 0>,
+				<&msmgpio 21 0>,
+				<&msmgpio 20 0>;
+		qcom,gpio-reset = <1>;
+		qcom,gpio-standby = <2>;
+		qcom,gpio-req-tbl-num = <0 1 2>;
+		qcom,gpio-req-tbl-flags = <1 0 0>;// 1-IN,0-OUT
+		qcom,gpio-req-tbl-label = "CAMIF_MCLK",
+				"CAM_RESET",
+				"CAM_STANDBY";
+		qcom,csi-lane-assign = <0xe4>;
+		qcom,csi-lane-mask = <0x3>;
+		qcom,sensor-position = <0>;  //0-back ,1-front
+		qcom,sensor-mode = <0>; //0-back 2D
+		qcom,sensor-type = <1>; //0-raw,1-yuv
+		qcom,cci-master = <0>;
+		status = "ok";
+	};
+  /*ZTEBSP yuxin add for P821a10 use T4K28,2013.10.23 --*/
+  	qcom,camera@42 {
+		compatible = "qcom,sp0a20";
+		reg = <0x42>;//
+		qcom,slave-id = <0x42 0x02 0x2b>;
+		qcom,csiphy-sd-index = <0>;
+		qcom,csid-sd-index = <0>;
+		qcom,mount-angle = <90>; //90 yuxin modify for PV version cam test,2013.11.18
+		qcom,sensor-name = "sp0a20";
+		cam_vdig-supply = <&pm8110_l14>;
+		cam_vana-supply = <&pm8110_l19>;
+		cam_vio-supply = <&pm8110_l14>;
+		qcom,cam-vreg-name = "cam_vdig", "cam_vio", "cam_vana";
+		qcom,cam-vreg-type = <0 0 0>; //0 for LDO and 1 for LVS
+		qcom,cam-vreg-min-voltage = <1800000 1800000 2850000>;
+		qcom,cam-vreg-max-voltage = <1800000 1800000 2850000>;
+		qcom,cam-vreg-op-mode = <200000 200000 80000>;
+		qcom,gpio-no-mux = <0>;
+		gpios = <&msmgpio 13 0>,
+				<&msmgpio 21 0>,
+				<&msmgpio 20 0>;
+		qcom,gpio-reset = <1>;
+		qcom,gpio-standby = <2>;
+		qcom,gpio-req-tbl-num = <0 1 2>;
+		qcom,gpio-req-tbl-flags = <1 0 0>;// 1-IN,0-OUT
+		qcom,gpio-req-tbl-label = "CAMIF_MCLK",
+				"CAM_RESET",
+				"CAM_STANDBY";
+		qcom,csi-lane-assign = <0xe4>;
+		qcom,csi-lane-mask = <0x3>;
+		qcom,sensor-position = <0>;  //0-back ,1-front
+		qcom,sensor-mode = <0>; //0-back 2D
+		qcom,sensor-type = <0>; //0-raw,1-yuv
+		qcom,cci-master = <0>;
+		status = "ok";
+	};
+  
+ 
 };
 

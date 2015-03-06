@@ -68,7 +68,7 @@ static int __devinit vkey_parse_dt(struct device *dev,
 		dev_err(dev, "Failed to read label\n");
 		return -EINVAL;
 	}
-
+	printk("virtual kesy wangminrong %s\r\n",pdata->name);
 	rc = of_property_read_u32(np, "qcom,disp-maxx", &pdata->disp_maxx);
 	if (rc) {
 		dev_err(dev, "Failed to read display max x\n");
@@ -167,6 +167,32 @@ static int __devinit vkeys_probe(struct platform_device *pdev)
 		x1 = x2 + border;
 		x2 = x2 + border + width;
 		center_x = x1 + (x2 - x1) / 2;
+        
+		printk("wangminrong i = %d add %d %d %d %d\r\n",i,center_x, center_y, width, height);
+		#if 1
+		if(i == 0)
+		{
+			center_x =  80;
+			center_y = 910;
+			width = 100;
+			height = 85;
+		}
+		else if(i == 1)
+		{
+			center_x =  240;
+			center_y = 910;
+			width = 108;
+			height = 85;
+		}
+		else if(i == 2)
+		{
+			center_x =  320;
+			center_y = 910;
+			width = 110;
+			height = 85;
+		}
+		#endif
+	        printk("wangminrong222 i = %d add %d %d %d %d\r\n",i,center_x, center_y, width, height);
 		c += snprintf(vkey_buf + c, MAX_BUF_SIZE - c,
 				"%s:%d:%d:%d:%d:%d\n",
 				VKEY_VER_CODE, pdata->keycodes[i],

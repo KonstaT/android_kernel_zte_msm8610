@@ -673,4 +673,7 @@ source "drivers/misc/ti-st/Kconfig"
 source "drivers/misc/lis3lv02d/Kconfig"
 source "drivers/misc/carma/Kconfig"
 source "drivers/misc/altera-stapl/Kconfig"
+#[ECID:000000] ZTEBSP wanghaifei start 20120330, add sensor support
+source "drivers/misc/zte-sensor/Kconfig"
+#[ECID:000000] ZTEBSP wanghaifei end 20120330, add sensor support
 endmenu

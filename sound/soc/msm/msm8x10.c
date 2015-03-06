@@ -10,6 +10,7 @@
  * GNU General Public License for more details.
  */
 
+
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
@@ -50,13 +51,50 @@ static int msm_btsco_ch = 1;
 static int msm_proxy_rx_ch = 2;
 static struct platform_device *spdev;
 static int ext_spk_amp_gpio = -1;
+//jiaobaocun 20130902 start
+#define JACK_DETECT_GPIO 83
+static int msm8x10_hs_detect_use_gpio = -1;
+module_param(msm8x10_hs_detect_use_gpio, int, 0444);
+MODULE_PARM_DESC(msm8x10_hs_detect_use_gpio, "Use GPIO for headset detection");
 
+static bool msm8x10_hs_detect_extn_cable;
+module_param(msm8x10_hs_detect_extn_cable, bool, 0444);
+MODULE_PARM_DESC(msm8x10_hs_detect_extn_cable, "Enable extension cable feature");
+
+static bool msm8x10_hs_detect_use_firmware;
+module_param(msm8x10_hs_detect_use_firmware, bool, 0444);
+MODULE_PARM_DESC(msm8x10_hs_detect_use_firmware, "Use firmware for headset "	 "detection");
+//jiaobaocun 20130902 end
 /* pointers for digital codec register mappings */
 static void __iomem *pcbcr;
 static void __iomem *prcgr;
 
 static int msm_sec_mi2s_rx_ch = 1;
 static int msm_pri_mi2s_tx_ch = 1;
+static int msm_sec_mi2s_rx_bit_format = SNDRV_PCM_FORMAT_S16_LE;
+
+static inline int param_is_mask(int p)
+{
+	return ((p >= SNDRV_PCM_HW_PARAM_FIRST_MASK) &&
+			(p <= SNDRV_PCM_HW_PARAM_LAST_MASK));
+}
+
+static inline struct snd_mask *param_to_mask(struct snd_pcm_hw_params *p, int n)
+{
+	return &(p->masks[n - SNDRV_PCM_HW_PARAM_FIRST_MASK]);
+}
+
+static void param_set_mask(struct snd_pcm_hw_params *p, int n, unsigned bit)
+{
+	if (bit >= SNDRV_MASK_MAX)
+		return;
+	if (param_is_mask(n)) {
+		struct snd_mask *m = param_to_mask(p, n);
+		m->bits[0] = 0;
+		m->bits[1] = 0;
+		m->bits[bit >> 5] |= (1 << (bit & 31));
+	}
+}
 
 static void *def_msm8x10_wcd_mbhc_cal(void);
 static int msm8x10_enable_codec_ext_clk(struct snd_soc_codec *codec, int enable,
@@ -74,9 +112,11 @@ static struct wcd9xxx_mbhc_config mbhc_cfg = {
 	.insert_detect = true,
 	.swap_gnd_mic = NULL,
 	.use_int_rbias = false,
-	.cs_enable_flags = (1 << MBHC_CS_ENABLE_POLLING |
+	.micbias_enable_flags = 1 << MBHC_MICBIAS_ENABLE_THRESHOLD_HEADSET |
+				1 << MBHC_MICBIAS_ENABLE_REGULAR_HEADSET,
+	.cs_enable_flags = 0,/*(1 << MBHC_CS_ENABLE_POLLING |
 			    1 << MBHC_CS_ENABLE_INSERTION |
-			    1 << MBHC_CS_ENABLE_REMOVAL),
+			    1 << MBHC_CS_ENABLE_REMOVAL),*/
 	.do_recalibration = false,
 	.use_vddio_meas = false,
 };
@@ -138,6 +178,8 @@ static const struct snd_soc_dapm_widget msm8x10_dapm_widgets[] = {
 	SND_SOC_DAPM_MIC("Handset Mic", NULL),
 	SND_SOC_DAPM_MIC("Headset Mic", NULL),
 	SND_SOC_DAPM_MIC("Secondary Mic", NULL),
+	SND_SOC_DAPM_MIC("Digital Mic1", NULL),
+	SND_SOC_DAPM_MIC("Digital Mic2", NULL),
 };
 static int msm8x10_ext_spk_power_amp_init(void)
 {
@@ -240,6 +282,8 @@ static int msm_rx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 					SNDRV_PCM_HW_PARAM_CHANNELS);
 
 	pr_debug("%s(): channel:%d\n", __func__, msm_pri_mi2s_tx_ch);
+	param_set_mask(params, SNDRV_PCM_HW_PARAM_FORMAT,
+					msm_sec_mi2s_rx_bit_format);
 	rate->min = rate->max = 48000;
 	channels->min = channels->max = msm_sec_mi2s_rx_ch;
 
@@ -255,6 +299,8 @@ static int msm_tx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 					SNDRV_PCM_HW_PARAM_CHANNELS);
 
 	pr_debug("%s(), channel:%d\n", __func__, msm_pri_mi2s_tx_ch);
+	param_set_mask(params, SNDRV_PCM_HW_PARAM_FORMAT,
+					msm_sec_mi2s_rx_bit_format);
 	rate->min = rate->max = 48000;
 	channels->min = channels->max = msm_pri_mi2s_tx_ch;
 
@@ -493,10 +539,51 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_dapm_context *dapm = &codec->dapm;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 	int ret = 0;
+	//jiaobaocun 20130902 start
+	int err;
+	uint32_t revision;
+	revision = socinfo_get_version();
+	pr_err("jiaobaocun version major = %d ,minor=%d\n",SOCINFO_VERSION_MAJOR(revision) ,SOCINFO_VERSION_MINOR(revision));
+	//jiaobaocun 20130902 end
 
 	pr_debug("%s(),dev_name%s\n", __func__, dev_name(cpu_dai->dev));
 	msm8x10_ext_spk_power_amp_init();
 
+	//jiaobaocun 20130902 start
+	if (SOCINFO_VERSION_MAJOR(revision) == 1 &&
+		    SOCINFO_VERSION_MINOR(revision) ==0){
+	    msm8x10_hs_detect_use_gpio=1;
+	}else if (SOCINFO_VERSION_MAJOR(revision) == 1 &&
+		    SOCINFO_VERSION_MINOR(revision) ==1){
+	    msm8x10_hs_detect_use_gpio=0;
+	}else{
+	    msm8x10_hs_detect_use_gpio=0;
+	}
+	printk(msm8x10_hs_detect_use_gpio?"headset_use_GPIO":"headset_use_MBHC");
+	if (msm8x10_hs_detect_use_gpio == 1) {
+		pr_debug("%s: Using MBHC mechanical switch\n", __func__);
+		err = gpio_tlmm_config(GPIO_CFG(JACK_DETECT_GPIO, 0,
+			GPIO_CFG_INPUT, GPIO_CFG_NO_PULL,
+			GPIO_CFG_8MA), GPIO_CFG_ENABLE);
+		if (err)
+			pr_err("%s: gpio_tlmm_config for %d failed\n",
+				__func__, JACK_DETECT_GPIO);
+		mbhc_cfg.gpio = JACK_DETECT_GPIO;
+		mbhc_cfg.gpio_irq = gpio_to_irq(JACK_DETECT_GPIO);
+		err = gpio_request(mbhc_cfg.gpio, "MBHC_HS_DETECT");
+		if (err < 0) {
+			pr_err("%s: gpio_request %d failed %d\n", __func__,
+			       mbhc_cfg.gpio, err);
+			return err;
+		}
+		gpio_direction_input(JACK_DETECT_GPIO);
+		if (msm8x10_hs_detect_extn_cable)
+			mbhc_cfg.detect_extn_cable = true;
+		mbhc_cfg.read_fw_bin = msm8x10_hs_detect_use_firmware;
+	} else{
+		pr_debug("%s: Not using GPIO interrupt for headset detection\n", __func__);
+	}
+	//jiaobaocun 20130902 end	
 	mbhc_cfg.calibration = def_msm8x10_wcd_mbhc_cal();
 	if (mbhc_cfg.calibration) {
 		ret = msm8x10_wcd_hs_detect(codec, &mbhc_cfg);
@@ -559,7 +646,7 @@ static void *def_msm8x10_wcd_mbhc_cal(void)
 #undef S
 #define S(X, Y) ((WCD9XXX_MBHC_CAL_PLUG_TYPE_PTR(msm8x10_wcd_cal)->X) = (Y))
 	S(v_no_mic, 30);
-	S(v_hs_max, 2550);
+	S(v_hs_max, 2850);
 #undef S
 #define S(X, Y) ((WCD9XXX_MBHC_CAL_BTN_DET_PTR(msm8x10_wcd_cal)->X) = (Y))
 	S(c[0], 62);
@@ -578,21 +665,21 @@ static void *def_msm8x10_wcd_mbhc_cal(void)
 	btn_high = wcd9xxx_mbhc_cal_btn_det_mp(btn_cfg,
 					       MBHC_BTN_DET_V_BTN_HIGH);
 	btn_low[0] = -50;
-	btn_high[0] = 10;
-	btn_low[1] = 11;
-	btn_high[1] = 52;
-	btn_low[2] = 53;
-	btn_high[2] = 94;
-	btn_low[3] = 95;
-	btn_high[3] = 133;
-	btn_low[4] = 134;
-	btn_high[4] = 171;
-	btn_low[5] = 172;
-	btn_high[5] = 208;
-	btn_low[6] = 209;
-	btn_high[6] = 244;
-	btn_low[7] = 245;
-	btn_high[7] = 330;
+	btn_high[0] = 20;
+	btn_low[1] = 21;
+	btn_high[1] = 61;
+	btn_low[2] = 62;
+	btn_high[2] = 104;
+	btn_low[3] = 105;
+	btn_high[3] = 148;
+	btn_low[4] = 149;
+	btn_high[4] = 189;
+	btn_low[5] = 190;
+	btn_high[5] = 228;
+	btn_low[6] = 229;
+	btn_high[6] = 269;
+	btn_low[7] = 270;
+	btn_high[7] = 500;
 	n_ready = wcd9xxx_mbhc_cal_btn_det_mp(btn_cfg, MBHC_BTN_DET_N_READY);
 	n_ready[0] = 80;
 	n_ready[1] = 68;

@@ -82,7 +82,7 @@ struct snd_card_azt2320 {
 static struct pnp_card_device_id snd_azt2320_pnpids[] = {
 	/* PRO16V */
 	{ .id = "AZT1008", .devs = { { "AZT1008" }, { "AZT2001" }, } },
-	/* Aztech Sound Galaxy 16 */
+	
 	{ .id = "AZT2320", .devs = { { "AZT0001" }, { "AZT0002" }, } },
 	/* Packard Bell Sound III 336 AM/SP */
 	{ .id = "AZT3000", .devs = { { "AZT1003" }, { "AZT2001" }, } },

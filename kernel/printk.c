@@ -47,6 +47,8 @@
 #include <mach/msm_rtb.h>
 #define CREATE_TRACE_POINTS
 #include <trace/events/printk.h>
+#include <linux/rtc.h>
+
 
 /*
  * Architectures can override it:
@@ -899,6 +901,9 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 	size_t plen;
 	char special;
 
+	struct timespec ts;
+	struct rtc_time tm;
+
 	boot_delay_msec();
 	printk_delay();
 
@@ -991,9 +996,20 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 
 				t = cpu_clock(printk_cpu);
 				nanosec_rem = do_div(t, 1000000000);
+				
+				if(t <15)
+				{
 				tlen = sprintf(tbuf, "[%5lu.%06lu] ",
 						(unsigned long) t,
 						nanosec_rem / 1000);
+				}
+				else
+				{				
+				    getnstimeofday(&ts);					
+					rtc_time_to_tm(ts.tv_sec, &tm);
+				    tlen = sprintf(tbuf, "[%02d-%02d %02d:%02d:%02d.%03d] ",
+						 tm.tm_mon + 1, tm.tm_mday,tm.tm_hour, tm.tm_min, tm.tm_sec, (int)ts.tv_nsec/1000000);
+				}
 
 				for (tp = tbuf; tp < tbuf + tlen; tp++)
 					emit_log_char(*tp);

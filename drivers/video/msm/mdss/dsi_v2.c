@@ -52,6 +52,13 @@ static int dsi_on(struct mdss_panel_data *pdata)
 	return rc;
 }
 
+
+static int first_start_up_on  = 1;
+static int first_start_up_off = 0;
+extern struct mdss_panel_data *g_pdata;
+extern void mdss_dsi_panel_bl_ctrl_direct(struct mdss_panel_data *pdata,u32 bl_level);
+int backlight_need_to_delay = 0;
+
 static int dsi_panel_handler(struct mdss_panel_data *pdata, int enable)
 {
 	int rc = 0;
@@ -64,12 +71,29 @@ static int dsi_panel_handler(struct mdss_panel_data *pdata, int enable)
 				panel_data);
 
 	if (enable) {
+		
+		if (first_start_up_on)
+		{
+			first_start_up_on = 0;
+			mdss_dsi_panel_bl_ctrl_direct(g_pdata, 0);
+			backlight_need_to_delay = 1;
+			//return 0;
+		}
+	        
 		dsi_ctrl_gpio_request(ctrl_pdata);
 		mdss_dsi_panel_reset(pdata, 1);
 		rc = ctrl_pdata->on(pdata);
+
 		if (rc)
 			pr_err("dsi_panel_handler panel on failed %d\n", rc);
 	} else {
+		
+		if (first_start_up_off)
+		{
+			first_start_up_off = 0;
+			return 0;
+		}
+        
 		if (dsi_intf.op_mode_config)
 			dsi_intf.op_mode_config(DSI_CMD_MODE, pdata);
 		rc = ctrl_pdata->off(pdata);

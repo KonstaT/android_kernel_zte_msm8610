@@ -255,7 +255,16 @@ static int64_t of_batterydata_convert_battery_id_kohm(int batt_id_uv,
 		/* batt id connector might be open, return 0 kohms */
 		return 0;
 	}
+/*ZTE_MODIFY BY WANGBIN FOR BATTERYDATA
+*DON NOT SUPPORT FUNCTION FEATURE NOW
+*/
+#if 1
+    resistor_value_kohm = 110;
+    printk("wb fixed resistor_value_kohm=%lld\n",resistor_value_kohm);
+#else
 	resistor_value_kohm = div64_s64(rpull_up * 1000000LL + denom/2, denom);
+    printk("wb resistor_value_kohm=%lld\n",resistor_value_kohm);
+#endif
 
 	pr_debug("batt id voltage = %d, resistor value = %lld\n",
 			batt_id_uv, resistor_value_kohm);
@@ -307,7 +316,8 @@ int of_batterydata_read_data(struct device_node *batterydata_container_node,
 		pr_err("No battery data found\n");
 		return -ENODATA;
 	}
-
+        
+        printk("wb best_id_kohm =%d, best_delta=%d\n",best_id_kohm,best_delta);
 	return of_batterydata_load_battery_data(best_node,
 					best_id_kohm, batt_data);
 }

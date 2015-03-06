@@ -307,6 +307,7 @@
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1800000>;
 			qcom,init-voltage = <1800000>;
+			regulator-always-on; // ZTEBSP wangbing, for i debug 20131203
 			status = "okay";
 		};
 	};
@@ -357,6 +358,7 @@
 			regulator-min-microvolt = <2850000>;
 			regulator-max-microvolt = <2850000>;
 			qcom,init-voltage = <2850000>;
+			regulator-always-on; // ZTEBSP wangbing, for i debug 20131203
 			status = "okay";
 		};
 	};

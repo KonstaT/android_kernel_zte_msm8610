@@ -161,9 +161,9 @@
 };
 
 &mdss_dsi0 {
-	qcom,dsi-pref-prim-pan = <&dsi_otm8018b_fwvga_vid>;
+	qcom,dsi-pref-prim-pan = <&dsi_ili9806c_wvga_vid>;/*ZTE_MODIFY*/
 };
-
-&dsi_otm8018b_fwvga_vid {
+/*ZTE_MODIFY*/
+&dsi_ili9806c_wvga_vid {
 	qcom,cont-splash-enabled;
 };

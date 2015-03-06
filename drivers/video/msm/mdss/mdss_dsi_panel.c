@@ -22,11 +22,47 @@
 #include <linux/pwm.h>
 #include <linux/err.h>
 
+#include <linux/proc_fs.h>
 #include "mdss_dsi.h"
 
 #define DT_CMD_HDR 6
 
+//lixuetao add for read panel info
+static struct proc_dir_entry * d_entry;
+static char  module_name[50]={"0"};
+//end
 DEFINE_LED_TRIGGER(bl_led_trigger);
+//lixuetao add for panel info
+static int mdss_dsi_panel_lcd_read_proc(char *page, char **start, off_t off, int count, int *eof, void *data)
+{	
+    int len = 0;		
+	len = sprintf(page, "%s\n", module_name);		
+	return len;
+}
+
+void  mdss_dsi_panel_lcd_proc(struct device_node *node)
+{		
+    const char * panel_name ;		
+	d_entry = create_proc_entry("driver/lcd_id", 0, NULL);
+	if(d_entry) {			
+		d_entry->read_proc = mdss_dsi_panel_lcd_read_proc;		
+		d_entry->write_proc = NULL;		
+		d_entry->data = NULL;	
+	}		
+	panel_name = of_get_property(node,	"zte,lcd-proc-panel-name", NULL);
+	if (!panel_name)
+	{		
+	    pr_info("LCD %s:%d, panel name not found!\n",__func__, __LINE__);		
+		strcpy(module_name,"0");	
+	}
+	else
+	{		
+	    pr_info("LCD%s: Panel Name = %s\n", __func__, panel_name);		
+		strcpy(module_name,panel_name);
+	}
+}
+
+//end
 
 void mdss_dsi_panel_pwm_cfg(struct mdss_dsi_ctrl_pdata *ctrl)
 {
@@ -172,6 +208,107 @@ static void mdss_dsi_panel_bklt_dcs(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 	mdss_dsi_cmdlist_put(ctrl, &cmdreq);
 }
 
+//////
+#define BL_GPIO 90
+#define BL_T_READ 100  //us
+#define BL_T_HI   20  //us
+#define BL_T_LO   10  //us
+#define BL_T_SHDN 10    //ms
+#define BL_LEVEL_SGM_MAX 16
+
+static int sgm_bklt_level_sys2sgm(int level)
+{
+	int level_t = 0;
+	if (level > BL_LEVEL_SGM_MAX)
+	{
+		level_t = 1;
+	}
+	else if (level <= 0)
+	{
+		level_t = 0;
+	}
+	else
+	{
+		level_t = BL_LEVEL_SGM_MAX - level + 1;
+	}
+	
+	return level_t;
+}
+
+static int sgm_bklt_level_pluse_num(int old, int new)
+{
+	int target = 0;
+	
+	if (new >= old)
+	{
+		target = new - old;
+	}
+	else
+	{
+		target = new + BL_LEVEL_SGM_MAX - old;
+	}
+	
+	return target;
+}
+
+static void sgm_bl_ready(void)
+{
+	gpio_set_value(BL_GPIO, 1);
+	udelay(BL_T_READ);
+}
+
+static void sgm_bl_pluse(int num)
+{
+	int i = 0;
+	for (i = 0; i < num; i++)
+	{
+		gpio_set_value(BL_GPIO, 0);
+		udelay(BL_T_LO);
+		gpio_set_value(BL_GPIO, 1);
+		udelay(BL_T_HI);
+	}
+}
+
+static void sgm_bl_shdn(void)
+{
+	gpio_set_value(BL_GPIO, 0);
+	mdelay(BL_T_SHDN);
+}
+/////
+
+#define ABOOT_BL_LEVEL 8
+static int sgm_bklt_gpio_last_level = ABOOT_BL_LEVEL;
+static void mdss_dsi_panel_bklt_gpio(struct mdss_dsi_ctrl_pdata *ctrl, int level)
+{
+	unsigned long flags;
+	int sgm_bklt_level = 0; //SGM3138 chip level
+	int sgm_bklt_pluse = 0; //pluse number
+	
+	pr_debug("%s: level=%d\n", __func__, level);
+	
+	if (0 == level)
+	{
+		sgm_bl_shdn();
+		sgm_bklt_gpio_last_level = sgm_bklt_level_sys2sgm(level);
+		return;
+	}
+	
+	//convert to SGM3138 chip level
+	sgm_bklt_level = sgm_bklt_level_sys2sgm(level);
+	//calculate pulse number
+	sgm_bklt_pluse = sgm_bklt_level_pluse_num(sgm_bklt_gpio_last_level, sgm_bklt_level);
+	
+	local_irq_save(flags);
+	if (0 == sgm_bklt_gpio_last_level)
+	{
+		sgm_bl_ready();
+	}
+	sgm_bl_pluse(sgm_bklt_pluse);
+	local_irq_restore(flags);
+	sgm_bklt_gpio_last_level = sgm_bklt_level;
+}
+////
+
 void mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 {
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
@@ -285,6 +422,8 @@ static int mdss_dsi_panel_partial_update(struct mdss_panel_data *pdata)
 	return rc;
 }
 
+extern int backlight_need_to_delay;
+//
 static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 							u32 bl_level)
 {
@@ -294,7 +433,15 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 		pr_err("%s: Invalid input data\n", __func__);
 		return;
 	}
+	
+	if (backlight_need_to_delay)
+	{
+		msleep(50);
+		backlight_need_to_delay = 0;
+	}
+	//
 
+	printk("mdss_dsi_panel_bl_ctrl, bl_level=%d\n",bl_level);
 	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 
@@ -317,12 +464,23 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 	case BL_DCS_CMD:
 		mdss_dsi_panel_bklt_dcs(ctrl_pdata, bl_level);
 		break;
+	case BL_GPIO:
+		mdss_dsi_panel_bklt_gpio(ctrl_pdata, bl_level);
+		break;
+	////
 	default:
 		pr_err("%s: Unknown bl_ctrl configuration\n",
 			__func__);
 		break;
 	}
 }
+
+void mdss_dsi_panel_bl_ctrl_direct(struct mdss_panel_data *pdata,
+							u32 bl_level)
+{
+	mdss_dsi_panel_bl_ctrl(pdata, bl_level);
+}
+//END
 
 static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 {
@@ -789,7 +947,10 @@ static int mdss_panel_parse_dt(struct device_node *np,
 			ctrl_pdata->pwm_pmic_gpio = tmp;
 		} else if (!strncmp(data, "bl_ctrl_dcs", 11)) {
 			ctrl_pdata->bklt_ctrl = BL_DCS_CMD;
+		} else if (!strncmp(data, "bl_ctrl_gpio", 12)) {
+			ctrl_pdata->bklt_ctrl = BL_GPIO;
 		}
+		//////
 	}
 	rc = of_property_read_u32(np, "qcom,mdss-dsi-bl-min-level", &tmp);
 	pinfo->bl_min = (!rc ? tmp : 0);
@@ -989,5 +1150,6 @@ int mdss_dsi_panel_init(struct device_node *node,
 	ctrl_pdata->off = mdss_dsi_panel_off;
 	ctrl_pdata->panel_data.set_backlight = mdss_dsi_panel_bl_ctrl;
 
+	mdss_dsi_panel_lcd_proc(node);
 	return 0;
 }

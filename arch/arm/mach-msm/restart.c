@@ -244,6 +244,9 @@ static irqreturn_t resout_irq_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+static int zte_dump_switch =1;
+
+
 static void msm_restart_prepare(const char *cmd)
 {
 #ifdef CONFIG_MSM_DLOAD_MODE
@@ -251,8 +254,11 @@ static void msm_restart_prepare(const char *cmd)
 	/* This looks like a normal reboot at this point. */
 	set_dload_mode(0);
 
+
 	/* Write download mode flags if we're panic'ing */
-	set_dload_mode(in_panic);
+	if(zte_dump_switch)
+	    set_dload_mode(in_panic);
+
 
 	/* Write download mode flags if restart_mode says so */
 	if (restart_mode == RESTART_DLOAD)
@@ -352,7 +358,10 @@ static int __init msm_restart_init(void)
 	dload_mode_addr = MSM_IMEM_BASE + DLOAD_MODE_ADDR;
 	emergency_dload_mode_addr = MSM_IMEM_BASE +
 		EMERGENCY_DLOAD_MODE_ADDR;
+
+       if(zte_dump_switch)
 	set_dload_mode(download_mode);
+
 #endif
 	msm_tmr0_base = msm_timer_get_timer0_base();
 	restart_reason = MSM_IMEM_BASE + RESTART_REASON_ADDR;
@@ -364,3 +373,19 @@ static int __init msm_restart_init(void)
 	return 0;
 }
 early_initcall(msm_restart_init);
+
+
+static int __init dump_switch_setup(char *str) 
+{
+	if(get_option(&str, &zte_dump_switch))
+	    {
+	    printk("zte_dump_switch = %d\n", zte_dump_switch);
+	    return 0;
+	  }
+	else
+	    {
+	    printk("zte_dump_switch get failed \n");
+	    return -EINVAL;
+	  }
+}
+early_param("zte_dump_switch", dump_switch_setup);

@@ -38,16 +38,16 @@
 			atmel,config = [
 				/* Object 6, Instance = 0 */
 				00 00 00 00 00 00
-				/* Object 38, Instance = 0 */
-				1D 03 00 1E 07 0D 00 00
+				/* Object 38, Instance = 0  ZTE_MODIFY*/
+				1D 02 00 0A 06 0D 00 00
 				/* Object 7, Instance = 0 */
 				20 08 32
 				/* Object 8, Instance = 0 */
 				19 00 14 14 FF 00 FF 00 00 00
-				/* Object 9, Instance = 0 */
+				/* Object 9, Instance = 0  ZTE_MODIFY */
 				83 00 00 13 0B 00 20 32 01 03
 				00 32 05 30 0A 05 0A 00 70 03
-				FC 01 04 2F F8 DC 00 00 40 00
+				FC 01 00 36 2F D8 00 00 40 00
 				00 0A 00 00 02
 				/* Object 18, Instance = 0 */
 				00 00
@@ -236,9 +236,10 @@
 				qcom,source-sel = <8>;
 				qcom,mode-ctrl = <0x10>;
 				qcom,pwm-channel = <0>;
-				qcom,pwm-us = <27>;
+				qcom,pwm-us = <14>; /*ZTE_MODIFY*/
 				qcom,vin-ctrl = <0x03>;
 				qcom,mode = "pwm";
+				qcom,min-brightness = <19>; /*ZTE_MODIFY*/
 			};
 		};
 	};
@@ -256,11 +257,14 @@
 
 &sdhc_1 {
 	vdd-supply = <&pm8110_l17>;
+	qcom,vdd-always-on; /*ZTE_MODIFY*/
+	qcom,vdd-lpm-sup; /*ZTE_MODIFY*/
 	qcom,vdd-voltage-level = <2900000 2900000>;
 	qcom,vdd-current-level = <200 400000>;
 
 	vdd-io-supply = <&pm8110_l6>;
 	qcom,vdd-io-always-on;
+	qcom,vdd-io-lpm-sup; /*ZTE_MODIFY*/
 	qcom,vdd-io-voltage-level = <1800000 1800000>;
 	qcom,vdd-io-current-level = <200 60000>;
 
@@ -417,14 +421,13 @@
 	qcom,mdss-pref-prim-intf = "dsi";
 };
 
+/*ZTE_MODIFY*/
 &mdss_dsi0 {
-	qcom,dsi-pref-prim-pan = <&dsi_truly_wvga_vid>;
+	qcom,dsi-pref-prim-pan = <&dsi_ili9806c_wvga_vid>;
 };
 
-&dsi_truly_wvga_vid {
+&dsi_ili9806c_wvga_vid {
 	qcom,cont-splash-enabled;
 };
 
-&dsi_truly_wvga_cmd {
-	qcom,cont-splash-enabled;
-};
+

@@ -23,6 +23,9 @@
 #include <linux/kernel.h>
 #include <linux/utsname.h>
 #include <linux/platform_device.h>
+#if defined(CONFIG_USB_MAC)
+#include <linux/types.h>
+#endif
 #include <linux/pm_qos.h>
 #include <linux/of.h>
 
@@ -34,7 +37,11 @@
 #include <mach/diag_dload.h>
 
 #include "gadget_chips.h"
-
+#if defined(CONFIG_USB_MAC)
+#include "u_serial.h"
+#include <linux/miscdevice.h>
+#include <linux/wakelock.h>
+#endif
 /*
  * Kbuild is not very cooperative with respect to linking separately
  * compiled library objects into one module.  So for now we won't use
@@ -1230,6 +1237,10 @@ static struct android_usb_function qdss_function = {
 	.cleanup	= qdss_function_cleanup,
 	.bind_config	= qdss_function_bind_config,
 };
+#if defined(CONFIG_USB_AT)
+static char max_serial_transports[32]={'s','m','d',',','t','t','y',',','s','m','d'};//"smd,tty,smd";      
+#endif 
+
 
 /* SERIAL */
 static char serial_transports[32];	/*enabled FSERIAL ports - "tty[,sdio]"*/
@@ -1287,7 +1298,11 @@ static int serial_function_bind_config(struct android_usb_function *f,
 		goto bind_config;
 
 	serial_initialized = 1;
+#if defined(CONFIG_USB_AT)
+	strlcpy(buf, max_serial_transports, sizeof(buf)); 
+#else
 	strlcpy(buf, serial_transports, sizeof(buf));
+#endif
 	b = strim(buf);
 
 	strlcpy(xport_name_buf, serial_xport_names, sizeof(xport_name_buf));
@@ -1314,6 +1329,20 @@ static int serial_function_bind_config(struct android_usb_function *f,
 	}
 
 bind_config:
+#if defined(CONFIG_USB_AT)
+
+	strlcpy(buf, serial_transports, sizeof(buf));
+	ports = 0;
+        b = strim(buf);
+
+        while (b) {
+                name = strsep(&b, ",");
+                if (name) {
+                        ports++;
+
+                }
+        }
+#endif
 	for (i = 0; i < ports; i++) {
 		err = gser_bind_config(c, i);
 		if (err) {
@@ -1779,6 +1808,7 @@ static int mass_storage_function_init(struct android_usb_function *f,
 
 	config->fsg.nluns = 1;
 	name[0] = "lun";
+#if 0
 	if (dev->pdata && dev->pdata->cdrom) {
 		config->fsg.luns[config->fsg.nluns].cdrom = 1;
 		config->fsg.luns[config->fsg.nluns].ro = 1;
@@ -1786,6 +1816,7 @@ static int mass_storage_function_init(struct android_usb_function *f,
 		name[config->fsg.nluns] = "lun0";
 		config->fsg.nluns++;
 	}
+#endif
 	if (dev->pdata && dev->pdata->internal_ums) {
 		config->fsg.luns[config->fsg.nluns].cdrom = 0;
 		config->fsg.luns[config->fsg.nluns].ro = 0;
@@ -2150,6 +2181,8 @@ android_bind_enabled_functions(struct android_dev *dev,
 		ret = f_holder->f->bind_config(f_holder->f, c);
 		if (ret) {
 			pr_err("%s: %s failed\n", __func__, f_holder->f->name);
+                        
+                        /*
 			while (!list_empty(&c->functions)) {
 				struct usb_function		*f;
 
@@ -2161,6 +2194,8 @@ android_bind_enabled_functions(struct android_dev *dev,
 			}
 			if (c->unbind)
 				c->unbind(c);
+                        */
+                        
 			return ret;
 		}
 	}
@@ -2403,7 +2438,6 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 	int enabled = 0;
 	bool audio_enabled = false;
 	static DEFINE_RATELIMIT_STATE(rl, 10*HZ, 1);
-	int err = 0;
 
 	if (!cdev)
 		return -ENODEV;
@@ -2438,6 +2472,8 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 			}
 		if (audio_enabled)
 			msleep(100);
+                
+                /*
 		err = android_enable(dev);
 		if (err < 0) {
 			pr_err("%s: android_enable failed\n", __func__);
@@ -2445,7 +2481,9 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 			dev->enabled = false;
 			mutex_unlock(&dev->mutex);
 			return size;
-		}
+		} */
+                android_enable(dev);
+                
 		dev->enabled = true;
 	} else if (!enabled && dev->enabled) {
 		android_disable(dev);

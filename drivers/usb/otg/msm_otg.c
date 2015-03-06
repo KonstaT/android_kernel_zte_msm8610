@@ -1395,6 +1395,14 @@ static void msm_otg_notify_charger(struct msm_otg *motg, unsigned mA)
 			"Failed notifying %d charger type to PMIC\n",
 							motg->chg_type);
 
+	//modify by liyongjun for handset can not shutdown after usb is unplugged during off charging
+	if (motg->online && mA == 0 && motg->cur_power == 0)
+	{
+		motg->cur_power = 100;
+		printk("st-charge,%s:workaround for cancel detect \n", __func__);
+	}
+	//end
+
 	if (motg->cur_power == mA)
 		return;
 

@@ -75,7 +75,7 @@ static struct pnp_card_device_id snd_ad1816a_pnpids[] = {
 	{ .id = "ADS7180", .devs = { { .id = "ADS7180" }, { .id = "ADS7181" } } },
 	/* Analog Devices AD1816A - added by Kenneth Platz <kxp@atl.hp.com> */
 	{ .id = "ADS7181", .devs = { { .id = "ADS7180" }, { .id = "ADS7181" } } },
-	/* Analog Devices AD1816A - Aztech/Newcom SC-16 3D */
+	
 	{ .id = "AZT1022", .devs = { { .id = "AZT1018" }, { .id = "AZT2002" } } },
 	/* Highscreen Sound-Boostar 16 3D - added by Stefan Behnel */
 	{ .id = "LWC1061", .devs = { { .id = "ADS7180" }, { .id = "ADS7181" } } },

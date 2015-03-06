@@ -28,6 +28,8 @@
 #include <linux/qpnp/power-on.h>
 #include <linux/of_batterydata.h>
 
+#include <linux/reboot.h>
+
 /* BMS Register Offsets */
 #define REVISION1			0x0
 #define REVISION2			0x1
@@ -2564,10 +2566,19 @@ static int recalculate_soc(struct qpnp_bms_chip *chip)
 						LR_MUX1_BATT_THERM, rc);
 			soc = chip->calculated_soc;
 		} else {
-			pr_debug("batt_temp phy = %lld meas = 0x%llx\n",
+			pr_err("batt_temp phy = %lld meas = 0x%llx\n",
 							result.physical,
 							result.measurement);
 			batt_temp = (int)result.physical;
+
+			if(batt_temp >= 680){
+				//power_supply_changed(&chip->batt_psy);
+				pr_err("***************************\n");
+				pr_err("high temp,machine_power_off\n");
+				pr_err("***************************\n");
+				msleep(5000);
+				machine_power_off();
+			}
 
 			mutex_lock(&chip->last_ocv_uv_mutex);
 			read_soc_params_raw(chip, &raw, batt_temp);

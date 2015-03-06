@@ -162,6 +162,10 @@ struct interrupt_data {
 /* Length of a SCSI Command Data Block */
 #define MAX_COMMAND_SIZE	16
 
+#if defined(CONFIG_USB_MAC)
+#define SC_GET_CONFIGRATION    0x46
+#define SC_SET_CD_SPEED	           0xbb	
+#endif
 /* SCSI Sense Key/Additional Sense Code/ASC Qualifier values */
 #define SS_NO_SENSE				0
 #define SS_COMMUNICATION_FAILURE		0x040800

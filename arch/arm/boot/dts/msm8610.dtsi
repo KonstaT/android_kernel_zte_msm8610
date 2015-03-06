@@ -286,6 +286,8 @@
 		interrupt-names = "core_irq", "bam_irq";
 
 		vdd-supply = <&pm8110_l17>;
+		qcom,vdd-always-on;  /* ZTE_MODIFY */
+		qcom,vdd-lpm-sup; /* ZTE_MODIFY */
 		qcom,vdd-voltage-level = <2900000 2900000>;
 		qcom,vdd-current-level = <9000 400000>;
 
@@ -557,8 +559,10 @@
 		interrupts = <0 97 0>;
 		qcom,i2c-bus-freq = <100000>;
                 qcom,i2c-src-freq = <19200000>;
+                /* ZTE_MODIFY for Sensor
                 qcom,sda-gpio = <&msmgpio 10 0>;
                 qcom,scl-gpio = <&msmgpio 11 0>;
+                */
                 qcom,master-id = <86>;
 	};
 

@@ -184,6 +184,7 @@ static const struct qpnp_vadc_map_pt adcmap_qrd_btm_threshold[] = {
 	{800,	408},
 };
 
+#if 0
 static const struct qpnp_vadc_map_pt adcmap_qrd_skuaa_btm_threshold[] = {
 	{-200,	1476},
 	{-180,	1450},
@@ -237,6 +238,34 @@ static const struct qpnp_vadc_map_pt adcmap_qrd_skuaa_btm_threshold[] = {
 	{780,	554},
 	{800,	549},
 };
+#else
+static const struct qpnp_vadc_map_pt adcmap_qrd_skuaa_btm_threshold[] = {//0~45 //P821A10
+	{-300,	1660},
+	{-250,	1615},
+	{-200,	1562},
+	{-150,	1499},
+	{-100,	1427},
+	{-50,	1349},
+	{0,	1267},
+	{50,	1182},
+	{100,	1099},
+	{150,	1019},
+	{200,	944},
+	{250,	876},
+	{300,	816},
+	{350,	763},
+	{400,	717},
+	{450,	677},
+	{500,	644},
+	{550,	616},
+	{600,	592},
+	{650,	572},
+	{700,	555},
+	{750,	541},
+	{800,	530} 
+};
+#endif
+
 
 static const struct qpnp_vadc_map_pt adcmap_qrd_skug_btm_threshold[] = {
 	{-200,	1338},
