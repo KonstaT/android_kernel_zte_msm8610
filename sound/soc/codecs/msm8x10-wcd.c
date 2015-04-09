@@ -9,9 +9,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-
-#define USE_SPK_RECEIVER_SWITCH_EXT_GPIO 93
-
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/firmware.h>
@@ -77,6 +74,8 @@
 
 /* RX_HPH_CNP_WG_TIME increases by 0.24ms */
 #define MSM8X10_WCD_WG_TIME_FACTOR_US  240
+
+#define USE_SPK_RECEIVER_SWITCH_EXT_GPIO 93
 
 enum {
 	MSM8X10_WCD_I2C_TOP_LEVEL = 0,
@@ -1186,8 +1185,6 @@ static const struct snd_kcontrol_new msm8x10_wcd_snd_controls[] = {
 		       0, 12, 1, line_gain),
 	SOC_SINGLE_TLV("HPHR Volume", MSM8X10_WCD_A_RX_HPH_R_GAIN,
 		       0, 12, 1, line_gain),
-	SOC_SINGLE_TLV("ADC1 Volume", MSM8X10_WCD_A_TX_1_EN, 2, 19, 0, analog_gain),
-	SOC_SINGLE_TLV("ADC2 Volume", MSM8X10_WCD_A_TX_2_EN, 2, 19, 0, analog_gain),
 	SOC_SINGLE_S8_TLV("RX1 Digital Volume",
 			  MSM8X10_WCD_A_CDC_RX1_VOL_CTL_B2_CTL,
 			  -84, 40, digital_gain),
@@ -1710,14 +1707,14 @@ static int msm8x10_wcd_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 		snd_soc_update_bits(codec, micb_int_reg, 0x04, 0x04);
 		snd_soc_update_bits(codec, MSM8X10_WCD_A_MICB_1_CTL,
 					0x80, 0x80);
-		msm8x10_wcd->micb_en_count++;
-		pr_debug("%s micb_en_count : %d", __func__,
-				msm8x10_wcd->micb_en_count);
 		//wegiuohua modify temp  for ecm mic 20131227
 		#ifndef  USES_MEMS_MIC_IN_PROJECT
 		snd_soc_update_bits(codec, micb_int_reg, 0x20, 0x20);
 		#endif
 		//weiguohua modify  temp for ecm mic  20131227
+		msm8x10_wcd->micb_en_count++;
+		pr_debug("%s micb_en_count : %d", __func__,
+				msm8x10_wcd->micb_en_count);
 		break;
 	case SND_SOC_DAPM_POST_PMU:
 		usleep_range(20000, 20100);
