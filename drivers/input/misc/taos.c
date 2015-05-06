@@ -505,7 +505,7 @@ static long taos_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned long
     int prox_sum = 0, prox_mean = 0, prox_max = 0;
     int ret = 0, i = 0;
     u8 reg_val = 0;
-	int ALS_ON = 0;
+	static int ALS_ON = 0;
 	struct taos_prox_info prox_cal_info[CAL_NUMBER];
 	
     switch (cmd) {
@@ -621,19 +621,25 @@ static long taos_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned long
             }
 		
             prox_mean = prox_sum/CAL_NUMBER;
-            taos_cfgp->prox_threshold_lo = ((((prox_max - prox_mean) * 170) + 50)/100) + prox_mean;
-			taos_cfgp->prox_threshold_hi = taos_cfgp->prox_threshold_lo + 0x20;
-            dev_info(&taos_datap->client->dev, "first prox_threshold_lo = 0x%x, prox_threashold_hi = 0x%x, max=0x%x, mean=0x%x\n", taos_cfgp->prox_threshold_lo, taos_cfgp->prox_threshold_hi, prox_max, prox_mean);
-
-			if ((taos_cfgp->prox_threshold_hi >= 850) ||(taos_cfgp->prox_threshold_hi == taos_cfgp->prox_threshold_lo)){
-                dev_info(&taos_datap->client->dev, "threshold too big, use default threshold\n");
-                taos_cfgp->prox_threshold_hi = prox_threshold_hi_param;
-                taos_cfgp->prox_threshold_lo = prox_threshold_lo_param;
-            }  else if  (taos_cfgp->prox_threshold_hi<100){
-           		dev_info(&taos_datap->client->dev, "threshold too small, use default threshold\n");
-				taos_cfgp->prox_threshold_hi = 200;
-				taos_cfgp->prox_threshold_lo = 150;			
-			}
+	  if ((prox_max - prox_mean) < 150) {
+		 int prox_diff = (prox_max - prox_mean) > 12 ? (prox_max - prox_mean) : 12;	
+		  taos_cfgp->prox_threshold_lo = (((prox_diff * 180) + 50)/100) + prox_mean;
+		  taos_cfgp->prox_threshold_hi = taos_cfgp->prox_threshold_lo + 0x20;
+		  dev_info(&taos_datap->client->dev, "first prox_threshold_lo = 0x%x, prox_threashold_hi = 0x%x, max=0x%x, mean=0x%x\n", 
+				  taos_cfgp->prox_threshold_lo, taos_cfgp->prox_threshold_hi, prox_max, prox_mean);
+	  } else {
+		  taos_cfgp->prox_threshold_hi = 0x3ff;
+		  dev_info(&taos_datap->client->dev, "data difference too big\n");
+	  }
+	  if ((taos_cfgp->prox_threshold_hi >= 850) ||(taos_cfgp->prox_threshold_hi == taos_cfgp->prox_threshold_lo)){
+		  dev_info(&taos_datap->client->dev, "threshold too big, use default threshold\n");
+		  taos_cfgp->prox_threshold_hi = prox_threshold_hi_param;
+		  taos_cfgp->prox_threshold_lo = prox_threshold_lo_param;
+	  }  else if  (taos_cfgp->prox_threshold_hi<350){
+		  dev_info(&taos_datap->client->dev, "threshold too small, use default threshold\n");
+		  taos_cfgp->prox_threshold_hi = 400;
+		  taos_cfgp->prox_threshold_lo = 360;			
+	  }
 			
         	for (i = 0; i < sizeof(taos_triton_reg_init); i++){
         		if(i !=11){
