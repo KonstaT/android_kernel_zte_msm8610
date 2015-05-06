@@ -1381,6 +1381,12 @@ static struct device_node *dsi_find_panel_of_node(
 		} else if (!strncmp(panel_name, ZGD_NT35512_480_800_4P0_P821E10_NAME,
 				strnlen(ZGD_NT35512_480_800_4P0_P821E10_NAME,PANEL_NAME_MAX_LEN))) {
 			LcdPanleID=ZGD_NT35512_480_800_4P0_P821E10;
+		} else if (!strncmp(panel_name, APEX_HX8379c_480_800_4P0_P821E10_NAME,
+				strnlen(APEX_HX8379c_480_800_4P0_P821E10_NAME,PANEL_NAME_MAX_LEN))) {
+			LcdPanleID=APEX_HX8379c_480_800_4P0_P821E10;
+		} else if (!strncmp(panel_name, APEX_ILI9806E_480_800_4P0_P821E10_NAME,
+				strnlen(APEX_ILI9806E_480_800_4P0_P821E10_NAME,PANEL_NAME_MAX_LEN))) {
+			LcdPanleID=APEX_ILI9806E_480_800_4P0_P821E10;
 		} else {
 			LcdPanleID=LCD_PANEL_NOPANEL;
 		}

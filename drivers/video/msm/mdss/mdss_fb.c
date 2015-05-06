@@ -521,6 +521,12 @@ static int msm_lcd_read_proc( char *page, char **start, off_t off, int count, in
 		case ZGD_NT35512_480_800_4P0_P821E10:
 			strcpy(module_name, "IC:NT35512+ZGD; Glass:CMI; Resolution:480*800");
 			break;
+		case APEX_HX8379c_480_800_4P0_P821E10:
+			strcpy(module_name, "IC:HX8379C+APEX; Glass:CMI; Resolution:480*800");
+			break;
+		case APEX_ILI9806E_480_800_4P0_P821E10:
+			strcpy(module_name, "IC:ILI9806E+APEX; Glass:CMI; Resolution:480*800");
+			break;
 		default:
 			strcpy(module_name,"0");
 		break;
