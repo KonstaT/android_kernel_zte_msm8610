@@ -1244,19 +1244,11 @@ qpnp_arb_stop_work(struct work_struct *work)
 	struct delayed_work *dwork = to_delayed_work(work);
 	struct qpnp_chg_chip *chip = container_of(dwork,
 				struct qpnp_chg_chip, arb_stop_work);
-	int real_usb_present = 0;
-	
+
 	printk("doumm: Enter qpnp_arb_stop_work.\n");
 	if (!chip->chg_done)
 		qpnp_chg_charge_en(chip, !chip->charging_disabled);
 	qpnp_chg_force_run_on_batt(chip, chip->charging_disabled);
-	real_usb_present = qpnp_chg_is_usb_chg_plugged_in(chip);
-	printk("PM_DEBUG_MXP: real_usb_present = %d.\n",real_usb_present);
-	if(0 == real_usb_present)
-	{
-		power_supply_set_present(chip->usb_psy, 0);
-	}
-	printk("PM_DEBUG_MXP: Exit qpnp_arb_stop_work.\n");
 }
 
 static void
@@ -1335,12 +1327,7 @@ qpnp_chg_usb_chg_gone_irq_handler(int irq, void *_chip)
 		schedule_delayed_work(&chip->arb_stop_work,
 			msecs_to_jiffies(ARB_STOP_WORK_MS));
 	}
-	if(!qpnp_chg_is_usb_chg_plugged_in(chip))
-	{
-	power_supply_set_present(chip->usb_psy, 0);
-	printk("doumm:charger irq report worongly!!\n");
-	}
-	printk("doumm: chg_usb_chg_gone_irq_handlerd.\n");
+
 	return IRQ_HANDLED;
 }
 
@@ -1622,7 +1609,7 @@ static irqreturn_t
 qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 {
 	struct qpnp_chg_chip *chip = _chip;
-	int usb_present, host_mode, usbin_health,temp_usb_in_status;
+	int usb_present, host_mode, usbin_health;
 	u8 psy_health_sts;
 
 	usb_present = qpnp_chg_is_usb_chg_plugged_in(chip);
@@ -1715,19 +1702,7 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 		}
 		schedule_work(&chip->batfet_lcl_work);
 	}
-	else
-	{
-		printk("doumm: Read qpnp_chg_is_usb_chg_plugged_in wrong.\n");
-		temp_usb_in_status = qpnp_chg_is_usb_chg_plugged_in(chip);
-		printk("doumm: This time  temp_usb_in_status = %d.\n",temp_usb_in_status);
-		if((1 == usb_present)&&(0 == temp_usb_in_status))
-		{
-			chip->usb_present = temp_usb_in_status;
-			printk("PM_DEBUG_MXP: Force set no present of USB.\n");
-			power_supply_set_present(chip->usb_psy, chip->usb_present);
-		}
-	}
-	printk("doumm: Exit qpnp_chg_usb_usbin_valid_irq_handler.\n");
+
 	return IRQ_HANDLED;
 }
 
@@ -5243,7 +5218,7 @@ qpnp_charger_probe(struct spmi_device *spmi)
 	}
 
 	qpnp_chg_usb_chg_gone_irq_handler(chip->chg_gone.irq, chip);
-	
+
 	//maxiaoping 20140108 modify for charger,start.
 	wake_lock_init(&chip->chg_state_report_wake_lock, WAKE_LOCK_SUSPEND, "zte_chg_event_report");
 	//maxiaoping 20140108 modify for charger,end.
