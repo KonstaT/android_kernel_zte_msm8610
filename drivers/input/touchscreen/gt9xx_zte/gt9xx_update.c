@@ -2039,19 +2039,19 @@ u8 gup_check_fs_mounted(char *path_name)
         return FAIL;
     }
 
-#if 1
-    return SUCCESS;
-#else
     if (path.mnt->mnt_sb == root_path.mnt->mnt_sb)
     {
         //-- not mounted
+        path_put(&root_path);       
+        path_put(&path);
         return FAIL;
     }
     else
     {
+        path_put(&root_path);         
+        path_put(&path);
         return SUCCESS;
     }
-#endif
 }
 
 s32 i2c_write_bytes(struct i2c_client *client, u16 addr, u8 *buf, s32 len)
@@ -3052,6 +3052,8 @@ s32 gup_fw_download_proc(void *dir, u8 dwn_mode)
     }
     gtp_irq_enable(ts);
     show_len = 100;
+      GTP_INFO("fw_download_proc success!");
+	
     return SUCCESS;
     
 download_fail:

@@ -206,18 +206,36 @@ switch (proc_fw_infomation[0]){
 		break ;
 /* zhangzhao add  compatible code for 968 and 9137 */		
 	case 0x3:
-	 	len += sprintf(page + len, "module : %s\n", "LiHe-9137");
+	 	len += sprintf(page + len, "module : %s\n", "LiHe");
 		break ;
 	case 0x4:
-	 	len += sprintf(page + len, "module : %s\n", "YaShi-9137");
+	 	len += sprintf(page + len, "module : %s\n", "YaShi");
 		break ;
 	case 0x5:
-	 	len += sprintf(page + len, "module : %s\n", "JianBang-9137");
+	 	len += sprintf(page + len, "module : %s\n", "JianB");
 		break ;
-/* zhangzhao add  compatible code for 968 and 9137 end*/
+	case 0x6:
+	 	len += sprintf(page + len, "module : %s\n", "ZhXW");
+		break ;
+		
+/* zhangzhao add  compatible code for 960f and 9137 end*/
+		
+	case 0x7:
+	 	len += sprintf(page + len, "module : %s\n", "TeMeiK");
+		break ;
+	case 0x8:
+	 	len += sprintf(page + len, "module : %s\n", "NULL");
+		break ;
+	case 0x9:
+	 	len += sprintf(page + len, "module : %s\n", "JianB");
+		break ;
+	case 0xB:
+	 	len += sprintf(page + len, "module : %s\n", "ChengH");
+		break ;
+		
 		
 	 default:
-	 	len += sprintf(page + len, "module : %s\n", "I do not know");
+	 	len += sprintf(page + len, "module : %s\n", "Unknow");
 	}
 		if (off + count >= len)
 		*eof = 1;
@@ -271,7 +289,7 @@ static int keypad_enable_write(struct file *file, const char __user *buffer,
 
 int gtp_i2c_read(struct i2c_client *client, u8 *buf, int len)
 {
-//	struct goodix_ts_data *ts = i2c_get_clientdata(client);
+	struct goodix_ts_data *ts = i2c_get_clientdata(client);
 	struct i2c_msg msgs[2];
 	int ret = -EIO;
 	int retries = 0;
@@ -335,7 +353,7 @@ Output:
 *********************************************************/
 int gtp_i2c_write(struct i2c_client *client, u8 *buf, int len)
 {
-//	struct goodix_ts_data *ts = i2c_get_clientdata(client);
+	struct goodix_ts_data *ts = i2c_get_clientdata(client);
 	struct i2c_msg msg;
 	int ret = -EIO;
 	int retries = 0;
@@ -449,7 +467,7 @@ s32 gtp_send_cfg(struct i2c_client *client)
         return 0;
     }
     
-    GTP_INFO("Driver send config.");
+    GTP_INFO("Driver send config+++++.");
     for (retry = 0; retry < 5; retry++)
     {
         ret = gtp_i2c_write(client, config , GTP_CONFIG_MAX_LENGTH + GTP_ADDR_LENGTH);
@@ -459,6 +477,7 @@ s32 gtp_send_cfg(struct i2c_client *client)
         }
     }
 #endif
+    GTP_INFO("Driver send config------.");
 
 	return ret;
 }
@@ -576,6 +595,9 @@ Input:
 Output:
 	None.
 *********************************************************/
+#if GTP_COMPATIBLE_MODE
+static int cfg_sended = 0;
+#endif
 static void goodix_ts_work_func(struct work_struct *work)
 {
 	u8 end_cmd[3] = { GTP_READ_COOR_ADDR >> 8,
@@ -690,7 +712,7 @@ static void goodix_ts_work_func(struct work_struct *work)
         switch (rqst_buf[2] & 0x0F)
         {
         case GTP_RQST_CONFIG:
-            GTP_DEBUG("Request for config.");
+            GTP_INFO("Request for config.");
             ret = gtp_send_cfg(ts->client);
             if (ret < 0)
             {
@@ -700,12 +722,19 @@ static void goodix_ts_work_func(struct work_struct *work)
             {
                 rqst_buf[2] = GTP_RQST_RESPONDED;
                 gtp_i2c_write(ts->client, rqst_buf, 3);
-                GTP_DEBUG("Request for config responded!");
+		if(!cfg_sended)
+			{
+
+			cfg_sended = 1; 
+			GTP_INFO("first send cfg ok!!!!!!!!");
+			
+			}
+                GTP_INFO("Request for config responded!");
             }
             break;
             
         case GTP_RQST_BAK_REF:
-            GTP_DEBUG("Request for backup reference.");
+            GTP_INFO("Request for backup reference.");
             ret = gtp_bak_ref_proc(ts, GTP_BAK_REF_SEND);
             if (SUCCESS == ret)
             {
@@ -720,12 +749,12 @@ static void goodix_ts_work_func(struct work_struct *work)
             break;
             
         case GTP_RQST_RESET:
-            GTP_DEBUG("Request for reset.");
+            GTP_INFO("Request for reset.");
             gtp_recovery_reset(ts->client);
             break;
             
         case GTP_RQST_MAIN_CLOCK:
-            GTP_DEBUG("Request for main clock.");
+            GTP_INFO("Request for main clock.");
             ts->rqst_processing = 1;
             ret = gtp_main_clk_proc(ts);
             if (FAIL == ret)
@@ -1107,6 +1136,7 @@ static s8 gtp_enter_sleep(struct goodix_ts_data  *ts)
     {
         // GT9XXF: host interact with ic
         ret = gtp_i2c_read(ts->client, status_buf, 3);
+	  GTP_INFO("status_buf IS %d",status_buf[2]);
         if (ret < 0)
         {
             dev_err(&ts->client->dev,"failed to get backup-reference status");
@@ -1303,6 +1333,22 @@ Output:
 	Executive outcomes.
 	> =0: succeed, otherwise: failed
 *******************************************************/
+/*---------------------GT968---------------------------------*/    
+    u8 cfg_info_group1[] = CTP_CFG_GROUP1;//LiHe-----968
+    u8 cfg_info_group2[] = CTP_CFG_GROUP2;//NULL
+    u8 cfg_info_group3[] = CTP_CFG_GROUP3;//YaShi-----968
+/*---------------------GT9137---------------------------------*/    
+    u8 cfg_info_group4[] = CTP_CFG_GROUP4;//NULL
+    u8 cfg_info_group5[] = CTP_CFG_GROUP5;//NULL
+    u8 cfg_info_group6[] = CTP_CFG_GROUP6;//JianBang ----9137
+    u8 cfg_info_group7[] = CTP_CFG_GROUP7;//zhongxianwei ----9137
+/*---------------------GT960F---------------------------------*/        
+    u8 cfg_info_group8[] = CTP_CFG_GROUP8;//TEMEIKE----960f
+    u8 cfg_info_group9[] = CTP_CFG_GROUP9;//	NULL
+    u8 cfg_info_group10[] = CTP_CFG_GROUP10;//-----960F JIANBANG
+    u8 cfg_info_group11[] = CTP_CFG_GROUP11;//NULL
+    u8 cfg_info_group12[] = CTP_CFG_GROUP12;//-----960F CHENGHONG
+
 static int gtp_init_panel(struct goodix_ts_data *ts)
 {
     s32 ret = -1;
@@ -1313,25 +1359,29 @@ static int gtp_init_panel(struct goodix_ts_data *ts)
     u8 opr_buf[16] = {0};
     u8 sensor_id = 0; 
     
-    u8 cfg_info_group1[] = CTP_CFG_GROUP1;
-    u8 cfg_info_group2[] = CTP_CFG_GROUP2;
-    u8 cfg_info_group3[] = CTP_CFG_GROUP3;
-    u8 cfg_info_group4[] = CTP_CFG_GROUP4;
-    u8 cfg_info_group5[] = CTP_CFG_GROUP5;
-    u8 cfg_info_group6[] = CTP_CFG_GROUP6;
+	
     u8 *send_cfg_buf[] = {cfg_info_group1, cfg_info_group2, cfg_info_group3,
-                        cfg_info_group4, cfg_info_group5, cfg_info_group6};
+                        cfg_info_group4, cfg_info_group5, cfg_info_group6,cfg_info_group7,
+                        cfg_info_group8, cfg_info_group9,cfg_info_group10,cfg_info_group11,cfg_info_group12};
+	
     u8 cfg_info_len[] = { CFG_GROUP_LEN(cfg_info_group1),
                           CFG_GROUP_LEN(cfg_info_group2),
                           CFG_GROUP_LEN(cfg_info_group3),
                           CFG_GROUP_LEN(cfg_info_group4),
                           CFG_GROUP_LEN(cfg_info_group5),
-                          CFG_GROUP_LEN(cfg_info_group6)};
+                          CFG_GROUP_LEN(cfg_info_group6),
+                          CFG_GROUP_LEN(cfg_info_group7),
+                          CFG_GROUP_LEN(cfg_info_group8),
+                          CFG_GROUP_LEN(cfg_info_group9),
+                          CFG_GROUP_LEN(cfg_info_group10),
+                          CFG_GROUP_LEN(cfg_info_group11),
+                          CFG_GROUP_LEN(cfg_info_group12)};
 
     GTP_DEBUG_FUNC();
-    GTP_INFO("Config Groups\' Lengths: %d, %d, %d, %d, %d, %d", 
+    GTP_INFO("Config Groups\' Lengths: %d, %d, %d, %d, %d, %d %d, %d, %d,%d,%d,%d", 
         cfg_info_len[0], cfg_info_len[1], cfg_info_len[2], cfg_info_len[3],
-        cfg_info_len[4], cfg_info_len[5]);
+        cfg_info_len[4], cfg_info_len[5],cfg_info_len[6], cfg_info_len[7],
+        cfg_info_len[8],cfg_info_len[9],cfg_info_len[10],cfg_info_len[11]);
 
     
 #if GTP_COMPATIBLE_MODE
@@ -1356,7 +1406,10 @@ static int gtp_init_panel(struct goodix_ts_data *ts)
 
     if ((!cfg_info_len[1]) && (!cfg_info_len[2]) && 
         (!cfg_info_len[3]) && (!cfg_info_len[4]) && 
-        (!cfg_info_len[5]))
+        (!cfg_info_len[5])&& (!cfg_info_len[6]) &&
+        (!cfg_info_len[7])&& (!cfg_info_len[8])&&
+        (!cfg_info_len[9])&&(!cfg_info_len[10])&&
+        (!cfg_info_len[11]))
     {
         sensor_id = 0; 
     }
@@ -1400,6 +1453,14 @@ static int gtp_init_panel(struct goodix_ts_data *ts)
 					sensor_id +=3;
         				GTP_INFO("it is gt9137 ic  and sensor id plus 3 = %d", sensor_id);
 				}
+			else if(('9'==proc_fw_infomation[1])&&('6'==proc_fw_infomation[2])&&('0'==proc_fw_infomation[3])&&('F'==proc_fw_infomation[4]))
+				{
+					sensor_id +=7;
+        				GTP_INFO("it is gt960F ic  and sensor id plus 7 = %d", sensor_id);
+				}
+			else{
+        				GTP_INFO("it is NOT CONTAIN THIS IC TYPE = %d", sensor_id);
+			}
 		}
         GTP_INFO("after Sensor_ID: %d", sensor_id);
 /* zhangzhao add  compatible code for 968 and 9137 end */
@@ -1590,14 +1651,22 @@ s32 gtp_read_version(struct i2c_client *client, u16 *version)
 		GTP_INFO("IC Version: %c%c%c_%02x%02x\n", buf[2],
 				buf[3], buf[4],buf[7], buf[6]);
 		
-	} else {
-		if (buf[5] == 'S' || buf[5] == 's')
-			chip_gt9xxs = 1;
+		}
+	else if(buf[5] == 'S' || buf[5] == 's')
+		{
+		chip_gt9xxs = 1;
 		dev_dbg(&client->dev, "IC Version: %c%c%c%c_%02x%02x\n", buf[2],
 				buf[3], buf[4], buf[5], buf[7], buf[6]);
 		GTP_INFO("IC-Version: %c%c%c%c_%02x%02x\n", buf[2],
 				buf[3], buf[4],buf[5], buf[7], buf[6]);
 		
+		}
+	else
+		{
+		dev_dbg(&client->dev, "IC Version: %c%c%c%c_%02x%02x\n", buf[2],
+				buf[3], buf[4], buf[5], buf[7], buf[6]);
+		GTP_INFO("IC--Version: %c%c%c%c_%02x%02x\n", buf[2],
+				buf[3], buf[4],buf[5], buf[7], buf[6]);
 	}
 /* zhangzhao add  compatible code for 968 and 9137 */
 	
@@ -1774,6 +1843,8 @@ static int gtp_request_input_dev(struct goodix_ts_data *ts)
 	__set_bit(INPUT_PROP_DIRECT, ts->input_dev->propbit);
 	input_mt_init_slots(ts->input_dev, 10);/* in case of "out of memory" */
 #else
+	__set_bit(INPUT_PROP_DIRECT, ts->input_dev->propbit);//zhangzhao for tp bug 2014-6-6
+
 	ts->input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
 #endif
 
@@ -2888,12 +2959,25 @@ Input:
 Output:
 	None.
 *******************************************************/
+
+int flag_booted = 0;
+
 static void goodix_ts_suspend(struct goodix_ts_data *ts)
 {
 	int ret = -1, i;
 	
 
 	GTP_DEBUG_FUNC();
+#if GTP_COMPATIBLE_MODE
+    if (CHIP_TYPE_GT9F == ts->chip_type)
+    	{
+	if(!cfg_sended)
+		return ;
+    	}
+#endif	
+      GTP_INFO("goodix_ts_suspend++.");
+
+
 
 #if GTP_ESD_PROTECT
 	
@@ -2923,6 +3007,7 @@ static void goodix_ts_suspend(struct goodix_ts_data *ts)
 	 * delay 48 + 10ms to ensure reliability
 	 */
 	msleep(58);
+	flag_booted =1;
 }
 
 /*******************************************************
@@ -2939,6 +3024,18 @@ static void goodix_ts_resume(struct goodix_ts_data *ts)
 
 	GTP_DEBUG_FUNC();
 
+	if(!flag_booted)
+		return;
+#if GTP_COMPATIBLE_MODE
+    if (CHIP_TYPE_GT9F == ts->chip_type)
+    	{
+	if(!cfg_sended)
+		return;
+    	}
+#endif	
+      GTP_INFO("goodix_ts_resume++.");
+
+	
 	ret = gtp_wakeup_sleep(ts);
 
 #if GTP_SLIDE_WAKEUP
@@ -2989,6 +3086,7 @@ static int fb_notifier_callback(struct notifier_block *self,
 	if (evdata && evdata->data && event == FB_EVENT_BLANK &&
 			ts && ts->client) {
 		blank = evdata->data;
+		GTP_INFO(" THE blank is %d",*blank);
 		if (*blank == FB_BLANK_UNBLANK)
 			goodix_ts_resume(ts);
 		else if (*blank == FB_BLANK_POWERDOWN)
