@@ -607,6 +607,9 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 	ret = snd_soc_add_codec_controls(codec, msm_snd_controls,
 					 ARRAY_SIZE(msm_snd_controls));
 	if (ret < 0)
+		{
+       pr_err("%s:zte add snd_soc_add_codec_controls fail  \n", __func__);		
+		}
 		return ret;
 
 exit:

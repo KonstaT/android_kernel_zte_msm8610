@@ -135,8 +135,11 @@ static const char *msm8610_dt_match[] __initconst = {
 	"qcom,msm8610",
 	NULL
 };
-
+#ifdef CONFIG_ZTE_CPU_INFO_8210
+DT_MACHINE_START(MSM8610_DT, "Qualcomm MSM 8210 (Flattened Device Tree)")
+#else
 DT_MACHINE_START(MSM8610_DT, "Qualcomm MSM 8610 (Flattened Device Tree)")
+#endif
 	.map_io = msm_map_msm8610_io,
 	.init_irq = msm_dt_init_irq,
 	.init_machine = msm8610_init,

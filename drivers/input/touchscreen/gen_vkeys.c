@@ -185,7 +185,7 @@ static int __devinit vkeys_probe(struct platform_device *pdev)
 		}
 		else if(i == 2)
 		{
-			center_x =  320;
+			center_x =  400;
 			center_y = 910;
 			width = 110;
 			height = 85;

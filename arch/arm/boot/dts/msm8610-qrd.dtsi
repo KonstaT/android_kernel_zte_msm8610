@@ -118,6 +118,22 @@
 		status = "ok";
 	};
 
+    /*zte-modify, zhangbo add for nfc, start*/
+	i2c@f9924000{
+		nfc_pn544@28{
+			compatible = "nxp,pn544";
+			reg = <0x28>;
+			interrupt-parent = <&msmgpio>;
+			interrupts = <82 0x2>;
+			vlogic-supply = <&pm8110_l6>;
+			nfc,irq_gpio = <&msmgpio 82 0>;
+			nfc,firm_gpio = <&msmgpio 71 0>;
+			nfc,ven_gpio = <&msmgpio 75 0>;
+			nfc,int_active_low = <0>;
+	    };
+	};
+    /*zte-modify, zhangbo add for nfc, end*/
+	
 //[ECID:000000] ZTEBSP wanghaifei 20130905 start, for sensor
 	i2c@f9925000 { /* BLSP-1 QUP-3 */
 		kionix@f {
@@ -128,7 +144,6 @@
 			vdd-supply = <&pm8110_l19>;
 			vio-supply = <&pm8110_l14>;
 			kionix,gpio-irq1 = <&msmgpio 81 0>;
-			kionix,gpio-irq2 = <&msmgpio 82 0>;
 			kionix,min-interval = <5>;
 			kionix,poll-interval = <200>;
 			kionix,axis-map-x = <0>;
@@ -148,7 +163,6 @@
 			vdd-supply = <&pm8110_l19>;
 			vio-supply = <&pm8110_l14>;
 			st,gpio-irq1 = <&msmgpio 81 0>;
-			st,gpio-irq2 = <&msmgpio 82 0>;
 			st,min-interval = <5>;
 			st,poll-interval = <100>;
 			st,axis-map-x = <0>;

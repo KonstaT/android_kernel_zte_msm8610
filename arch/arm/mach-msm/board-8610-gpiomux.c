@@ -166,6 +166,16 @@ static struct gpiomux_setting gpio_int_sus_cfg = {
 	.dir = GPIOMUX_IN,
 };
 
+
+#ifdef CONFIG_PN544_NFC
+static struct gpiomux_setting zte_nfc_pn544_cfg = {
+	.func = GPIOMUX_FUNC_GPIO,
+	.drv = GPIOMUX_DRV_2MA,
+	.pull = GPIOMUX_PULL_NONE,
+};
+#endif
+
+
 static struct msm_gpiomux_config msm_gpio_int_configs[] __initdata = {
 	{
 		.gpio = 84,
@@ -184,6 +194,8 @@ static struct msm_gpiomux_config msm_lcd_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &lcd_en_sus_cfg,
 		},
 	},
+	
+	#ifndef CONFIG_PN544_NFC
 	{
 		.gpio = 7,
 		.settings = {
@@ -191,6 +203,8 @@ static struct msm_gpiomux_config msm_lcd_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &lcd_en_sus_cfg,
 		},
 	},
+	#endif
+	
 	{
 		.gpio = 12,
 		.settings = {
@@ -215,6 +229,24 @@ static struct msm_gpiomux_config msm_blsp_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &gpio_i2c_config,
 		},
 	},
+	
+	#ifdef CONFIG_PN544_NFC
+	{
+		.gpio      = 6,		/* BLSP1 QUP1 I2C_SDA */
+		.settings = {
+			[GPIOMUX_ACTIVE] = &gpio_i2c_config,
+			[GPIOMUX_SUSPENDED] = &gpio_i2c_config,
+		},
+	},
+	{
+		.gpio      = 7,		/* BLSP1 QUP1 I2C_SCL */
+		.settings = {
+			[GPIOMUX_ACTIVE] = &gpio_i2c_config,
+			[GPIOMUX_SUSPENDED] = &gpio_i2c_config,
+		},
+	},
+	#endif
+	
 	{
 		.gpio      = 10,	/* BLSP1 QUP3 I2C_SDA */
 		.settings = {
@@ -637,6 +669,8 @@ static struct msm_gpiomux_config msm_interrupt_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &interrupt_gpio_suspend_pulldown,
 		},
 	},
+	
+	#ifndef CONFIG_PN544_NFC
 	{
 		.gpio = 82,	/*ACCEL_INT2 */
 		.settings = {
@@ -644,7 +678,37 @@ static struct msm_gpiomux_config msm_interrupt_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &interrupt_gpio_suspend_pulldown,
 		},
 	},
+	#endif
+	
 };
+
+
+#ifdef CONFIG_PN544_NFC
+static struct msm_gpiomux_config zte_nfc_pn544_configs[] __initdata = {
+	{
+		.gpio = 71,	/* NFC_FIRM */
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &zte_nfc_pn544_cfg,
+			[GPIOMUX_SUSPENDED] = &zte_nfc_pn544_cfg,
+		},
+	},
+	{
+		.gpio = 75,	/*NFC_VEN */
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &zte_nfc_pn544_cfg,
+			[GPIOMUX_SUSPENDED] = &zte_nfc_pn544_cfg,
+		},
+	},
+	{
+		.gpio = 82,	/*NFC_IRQ */
+		.settings = {
+			[GPIOMUX_ACTIVE]    = &zte_nfc_pn544_cfg,
+			[GPIOMUX_SUSPENDED] = &zte_nfc_pn544_cfg,
+		},
+	},
+};
+#endif
+
 
 static struct gpiomux_setting gpio_cdc_dmic_cfg = {
 	.func = GPIOMUX_FUNC_1,
@@ -705,6 +769,11 @@ void __init msm8610_init_gpiomux(void)
 		msm_gpiomux_install(msm_non_qrd_configs,
 			ARRAY_SIZE(msm_non_qrd_configs));
 	}
+    
+	#ifdef CONFIG_PN544_NFC
+	msm_gpiomux_install(zte_nfc_pn544_configs, ARRAY_SIZE(zte_nfc_pn544_configs));
+	#endif
+	
 	if (of_board_is_cdp())
 		msm_gpiomux_install(msm_cdc_dmic_configs,
 			ARRAY_SIZE(msm_cdc_dmic_configs));

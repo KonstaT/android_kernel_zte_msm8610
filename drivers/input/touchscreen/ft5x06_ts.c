@@ -338,10 +338,16 @@ switch (proc_fact_value){
 		break ;
 	 case 0x87:
 	 	len += sprintf(page + len, "module : %s\n", "LCE");
+		break ;		
+	 case 0x88:
+	 	len += sprintf(page + len, "module : %s\n", "ChengH");		
 		break ;
 	 case 0x8d:
 	 	len += sprintf(page + len, "module : %s\n", "Tianma");
 		break ;
+	case 0x96:
+	 	len += sprintf(page + len, "module : %s\n", "TeMeiK");
+		break ;		
 	case 0x9b:
 	 	len += sprintf(page + len, "module : %s\n", "Jinlong");
 		break ;
@@ -590,7 +596,7 @@ static int ft5x06_ts_suspend(struct device *dev)
 	if (gpio_is_valid(data->pdata->reset_gpio)) {
 		txbuf[0] = FT_REG_PMODE;
 		txbuf[1] = FT_PMODE_HIBERNATE;
-		ft5x06_i2c_write(data->client, txbuf, sizeof(txbuf));
+		ft5x06_i2c_write(data->client, txbuf, sizeof(txbuf));//zhangzhao for 6206 sleep
 	}
 
 	if (data->pdata->power_on) {
@@ -600,7 +606,7 @@ static int ft5x06_ts_suspend(struct device *dev)
 			goto pwr_off_fail;
 		}
 	} else {
-		err = ft5x06_power_on(data, false);
+		err = ft5x06_power_on(data, true);
 		if (err) {
 			dev_err(dev, "power off failed");
 			goto pwr_off_fail;

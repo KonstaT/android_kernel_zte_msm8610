@@ -28,6 +28,8 @@ struct panel_id {
 #define YASSY_ILI9805C_480_800_4P0_P821A10_NAME "qcom,mdss_dsi_ili9805c_wvga_video"
 #define LEAD_OTM8018B_480_854_4P5_P821B10_NAME "qcom,mdss_dsi_otm8018b_fwvga_video" //lijiangshuo add for P821B10 20140110
 #define ZGD_NT35512_480_800_4P0_P821E10_NAME "qcom,mdss_dsi_nt35512_wvga_video"    
+#define APEX_HX8379c_480_800_4P0_P821E10_NAME "qcom,mdss_dsi_hx8379c_apex_wvga_video"    
+#define APEX_ILI9806E_480_800_4P0_P821E10_NAME "qcom,mdss_dsi_ili9806e_apex_wvga_video"    
 
 enum {		/* mipi dsi panelid */
 	LCD_PANEL_NOPANEL,
@@ -35,6 +37,8 @@ enum {		/* mipi dsi panelid */
        YASSY_ILI9805C_480_800_4P0_P821A10,
        LEAD_OTM8018B_480_854_4P5_P821B10, // lijiangshuo add for P821B10 20140110
        ZGD_NT35512_480_800_4P0_P821E10,  
+       APEX_HX8379c_480_800_4P0_P821E10,  
+       APEX_ILI9806E_480_800_4P0_P821E10,  
 	LCD_PANEL_MAX,
 };
 /*zhoufan add panel id enum for lcd, 20131211 --*/

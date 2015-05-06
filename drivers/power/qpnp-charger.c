@@ -623,24 +623,23 @@ qpnp_chg_is_batfet_closed(struct qpnp_chg_chip *chip)
 	return (batfet_closed_rt_sts & BAT_FET_ON_IRQ) ? 1 : 0;
 }
 
-#define USB_VALID_BIT	BIT(7)
 static int
 qpnp_chg_is_usb_chg_plugged_in(struct qpnp_chg_chip *chip)
 {
-	u8 usbin_valid_rt_sts;
+	u8 usb_chgpth_rt_sts;
 	int rc;
 
-	rc = qpnp_chg_read(chip, &usbin_valid_rt_sts,
-				 chip->usb_chgpth_base + CHGR_STATUS , 1);
+	rc = qpnp_chg_read(chip, &usb_chgpth_rt_sts,
+				 INT_RT_STS(chip->usb_chgpth_base), 1);
 
 	if (rc) {
 		pr_err("spmi read failed: addr=%03X, rc=%d\n",
-				chip->usb_chgpth_base + CHGR_STATUS, rc);
+				INT_RT_STS(chip->usb_chgpth_base), rc);
 		return rc;
 	}
-	pr_debug("chgr usb sts 0x%x\n", usbin_valid_rt_sts);
+	pr_debug("chgr usb sts 0x%x\n", usb_chgpth_rt_sts);
 
-	return (usbin_valid_rt_sts & USB_VALID_BIT) ? 1 : 0;
+	return (usb_chgpth_rt_sts & USBIN_VALID_IRQ) ? 1 : 0;
 }
 
 static bool
@@ -659,10 +658,10 @@ qpnp_chg_is_ibat_loop_active(struct qpnp_chg_chip *chip)
 	return !!(buck_sts & IBAT_LOOP_IRQ);
 }
 
-#define USB_VALID_MASK 0xC0
-#define USB_COARSE_DET 0x10
-#define USB_VALID_UVP_VALUE    0x00
-#define USB_VALID_OVP_VALUE    0x40
+#define USB_VALID_MASK		0xC0
+#define USB_VALID_IN_MASK	BIT(7)
+#define USB_COARSE_DET		0x10
+#define USB_VALID_OVP_VALUE	0x40
 static int
 qpnp_chg_check_usb_coarse_det(struct qpnp_chg_chip *chip)
 {
@@ -681,7 +680,8 @@ qpnp_chg_check_usb_coarse_det(struct qpnp_chg_chip *chip)
 static int
 qpnp_chg_check_usbin_health(struct qpnp_chg_chip *chip)
 {
-	u8 usbin_chg_rt_sts, usbin_health = 0;
+	u8 usbin_chg_rt_sts, usb_chgpth_rt_sts;
+	u8 usbin_health = 0;
 	int rc;
 
 	rc = qpnp_chg_read(chip, &usbin_chg_rt_sts,
@@ -693,13 +693,23 @@ qpnp_chg_check_usbin_health(struct qpnp_chg_chip *chip)
 		return rc;
 	}
 
-	pr_debug("chgr usb sts 0x%x\n", usbin_chg_rt_sts);
+	rc = qpnp_chg_read(chip, &usb_chgpth_rt_sts,
+		INT_RT_STS(chip->usb_chgpth_base) , 1);
+
+	if (rc) {
+		pr_err("spmi read failed: addr=%03X, rc=%d\n",
+		INT_RT_STS(chip->usb_chgpth_base), rc);
+		return rc;
+	}
+
+	pr_debug("chgr usb sts 0x%x, chgpth rt sts 0x%x\n",
+				usbin_chg_rt_sts, usb_chgpth_rt_sts);
 	if ((usbin_chg_rt_sts & USB_COARSE_DET) == USB_COARSE_DET) {
 		if ((usbin_chg_rt_sts & USB_VALID_MASK)
 			 == USB_VALID_OVP_VALUE) {
 			usbin_health = USBIN_OVP;
 			pr_err("Over voltage charger inserted\n");
-		} else if ((usbin_chg_rt_sts & USB_VALID_BIT) != 0) {
+		} else if ((usb_chgpth_rt_sts & USBIN_VALID_IRQ) != 0) {
 			usbin_health = USBIN_OK;
 			pr_debug("Valid charger inserted\n");
 		}
@@ -1126,19 +1136,11 @@ qpnp_arb_stop_work(struct work_struct *work)
 	struct delayed_work *dwork = to_delayed_work(work);
 	struct qpnp_chg_chip *chip = container_of(dwork,
 				struct qpnp_chg_chip, arb_stop_work);
-	int real_usb_present = 0;
 	
 	printk("doumm: Enter qpnp_arb_stop_work.\n");
 	if (!chip->chg_done)
 		qpnp_chg_charge_en(chip, !chip->charging_disabled);
 	qpnp_chg_force_run_on_batt(chip, chip->charging_disabled);
-	real_usb_present = qpnp_chg_is_usb_chg_plugged_in(chip);
-	printk("PM_DEBUG_MXP: real_usb_present = %d.\n",real_usb_present);
-	if(0 == real_usb_present)
-	{
-		power_supply_set_present(chip->usb_psy, 0);
-	}
-	printk("PM_DEBUG_MXP: Exit qpnp_arb_stop_work.\n");
 }
 
 static void
@@ -1216,13 +1218,9 @@ qpnp_chg_usb_chg_gone_irq_handler(int irq, void *_chip)
 		qpnp_chg_force_run_on_batt(chip, 1);
 		schedule_delayed_work(&chip->arb_stop_work,
 			msecs_to_jiffies(ARB_STOP_WORK_MS));
+//	printk("doumm: chg_usb_chg_gone_irq_handlerd ARB WORK!\n");
 	}
-	if(!qpnp_chg_is_usb_chg_plugged_in(chip))
-	{
-	power_supply_set_present(chip->usb_psy, 0);
-	printk("doumm:charger irq report worongly!!\n");
-	}
-	printk("doumm: chg_usb_chg_gone_irq_handlerd.\n");
+//	printk("doumm: chg_usb_chg_gone_irq_handlerd.\n");
 	return IRQ_HANDLED;
 }
 
@@ -1453,17 +1451,21 @@ static irqreturn_t
 qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 {
 	struct qpnp_chg_chip *chip = _chip;
-	int usb_present, host_mode, usbin_health,temp_usb_in_status;
+	int usb_present, host_mode, usbin_health;
 	u8 psy_health_sts;
 
 	usb_present = qpnp_chg_is_usb_chg_plugged_in(chip);
 	host_mode = qpnp_chg_is_otg_en_set(chip);
 	pr_debug("usbin-valid triggered: %d host_mode: %d\n",
 		usb_present, host_mode);
+//	printk("doumm:usbin-valid triggered: %d host_mode: %d\n",
+//		usb_present, host_mode);
 
 	/* In host mode notifications cmoe from USB supply */
 	if (host_mode)
 		return IRQ_HANDLED;
+//	printk("doumm: Old state:chip->usb_present = %d.\n",chip->usb_present);
+
 
 	if (chip->usb_present ^ usb_present) {
 		chip->usb_present = usb_present;
@@ -1500,6 +1502,7 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 			qpnp_chg_iusbmax_set(chip, QPNP_CHG_I_MAX_MIN_100);
 			chip->prev_usb_max_ma = -EINVAL;
 			chip->aicl_settled = false;
+//			printk("doumm: The charger has been removed.\n");		
 		} else {
 			/* when OVP clamped usbin, and then decrease
 			 * the charger voltage to lower than the OVP
@@ -1528,6 +1531,7 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 			}
 		//maxiaoping 20131206 modify for charger,start.
 		wake_lock_timeout(&chip->chg_state_report_wake_lock, 3*HZ);
+//		printk("doumm: The charger has been attached.\n");
 
 			schedule_delayed_work(&chip->eoc_work,
 				msecs_to_jiffies(EOC_CHECK_PERIOD_MS));
@@ -1542,19 +1546,7 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 		}
 		schedule_work(&chip->batfet_lcl_work);
 	}
-	else
-	{
-		printk("doumm: Read qpnp_chg_is_usb_chg_plugged_in wrong.\n");
-		temp_usb_in_status = qpnp_chg_is_usb_chg_plugged_in(chip);
-		printk("doumm: This time  temp_usb_in_status = %d.\n",temp_usb_in_status);
-		if((1 == usb_present)&&(0 == temp_usb_in_status))
-		{
-			chip->usb_present = temp_usb_in_status;
-			printk("PM_DEBUG_MXP: Force set no present of USB.\n");
-			power_supply_set_present(chip->usb_psy, chip->usb_present);
-		}
-	}
-	printk("doumm: Exit qpnp_chg_usb_usbin_valid_irq_handler.\n");
+//	printk("doumm: Exit qpnp_chg_usb_usbin_valid_irq_handler.\n");
 	return IRQ_HANDLED;
 }
 

@@ -2,6 +2,7 @@ if ARCH_MSM
 
 menu "MSM SoC Type"
 
+
 config ARCH_MSM7X01A
 	bool "MSM7x00A / MSM7x01A"
 	select ARCH_MSM_ARM11
@@ -3053,4 +3054,8 @@ config KRAIT_REGULATOR
 	 line from the PMIC. This supply line is powered by multiple
 	 regulators running in ganged mode inside the PMIC. Enable
 	 this option to support such configurations.
+
 endif
+
+config ZTE_CPU_INFO_8210
+	bool "cpuinfo"
