@@ -1247,6 +1247,7 @@ CONFIG_QSEECOM=y
 # CONFIG_QFP_FUSE is not set
 # CONFIG_QPNP_MISC is not set
 # CONFIG_TI_DRV2667 is not set
+CONFIG_UID_CPUTIME=y
 # CONFIG_C2PORT is not set
 
 #
