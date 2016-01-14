@@ -209,6 +209,7 @@ static void mdss_dsi_panel_bklt_dcs(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 }
 
 //////
+//ZTE_MODIFY zhanglian 2014-1-21 add new backlight type
 #define BL_GPIO 90
 #define BL_T_READ 100  //us
 #define BL_T_HI   20  //us
@@ -276,6 +277,7 @@ static void sgm_bl_shdn(void)
 }
 /////
 
+//ZTE_MODIFY zhanglian 2014-1-21 add new backlight type
 #define ABOOT_BL_LEVEL 8
 static int sgm_bklt_gpio_last_level = ABOOT_BL_LEVEL;
 static void mdss_dsi_panel_bklt_gpio(struct mdss_dsi_ctrl_pdata *ctrl, int level)
@@ -422,6 +424,7 @@ static int mdss_dsi_panel_partial_update(struct mdss_panel_data *pdata)
 	return rc;
 }
 
+//ZTE_ADD
 extern int backlight_need_to_delay;
 //
 static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
@@ -434,6 +437,7 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 		return;
 	}
 	
+	//ZTE_ADD
 	if (backlight_need_to_delay)
 	{
 		msleep(50);
@@ -464,6 +468,7 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 	case BL_DCS_CMD:
 		mdss_dsi_panel_bklt_dcs(ctrl_pdata, bl_level);
 		break;
+	//ZTE_MODIFY 2014-1-21 add new backlight type
 	case BL_GPIO:
 		mdss_dsi_panel_bklt_gpio(ctrl_pdata, bl_level);
 		break;
@@ -475,6 +480,7 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 	}
 }
 
+//ZTE_MODIFY zhanglian, resolve TN panel open/close white problem
 void mdss_dsi_panel_bl_ctrl_direct(struct mdss_panel_data *pdata,
 							u32 bl_level)
 {
@@ -947,6 +953,7 @@ static int mdss_panel_parse_dt(struct device_node *np,
 			ctrl_pdata->pwm_pmic_gpio = tmp;
 		} else if (!strncmp(data, "bl_ctrl_dcs", 11)) {
 			ctrl_pdata->bklt_ctrl = BL_DCS_CMD;
+		//ZTE_MODIFY 2014-1-21 add new backlight type 
 		} else if (!strncmp(data, "bl_ctrl_gpio", 12)) {
 			ctrl_pdata->bklt_ctrl = BL_GPIO;
 		}

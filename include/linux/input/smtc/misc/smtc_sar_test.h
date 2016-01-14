@@ -60,10 +60,10 @@ static inline void smtc_sar_init(psmtc_sar_test_t this, psmtc_sar_test_platform_
         if (this->input) {
             set_bit(EV_ABS, this->input->evbit);
             set_bit(ABS_DISTANCE, this->input->mscbit);
-
+/** ZTE_MODIFY zhaoy196673: modified by zhaoyang for adding SX9500 prox driver */
 			this->input->name = "attiny44a";
 			//Should be "Semtech prox", avoid to make exist project change, use this name. zhaoyang196673
-	
+/** ZTE_MODIFY end zhaoyang  */	
             this->input->id.bustype = bustype;
             this->input->dev.parent = parent;
             input_set_abs_params(this->input, ABS_DISTANCE, 0, MAX_PROX_VAL, INPUT_FUZZ, INPUT_FLAT);
@@ -87,12 +87,12 @@ static inline unsigned char smtc_sar_state(psmtc_sar_test_t this, u8 value)
             if (this->prox_body!=1) {
                 this->prox_body = 1;
                 if (this->input) {
-
+/** ZTE_MODIFY zhaoy196673: modified by zhaoyang for adding SX9500 prox driver */
 #ifdef RUNTIME_REG_PRINT					
                     dev_info( this->input->dev.parent,
                               "\t\t Reporting Proximity of Body\n");
 #endif					
-						
+/** ZTE_MODIFY end zhaoyang  */						
                     input_report_abs(this->input,ABS_DISTANCE,DEV1_INT_VAL);
                     input_sync(this->input);
                 }
@@ -102,12 +102,12 @@ static inline unsigned char smtc_sar_state(psmtc_sar_test_t this, u8 value)
             if (this->prox_body!=0) {
                 this->prox_body = 0;
                 if (this->input) {
-
+/** ZTE_MODIFY zhaoy196673: modified by zhaoyang for adding SX9500 prox driver */
 #ifdef RUNTIME_REG_PRINT					
                     dev_info( this->input->dev.parent,
                               "\t\t Reporting No Body Proximity\n");
 #endif					
-						
+/** ZTE_MODIFY end zhaoyang  */						
                     input_report_abs(this->input,ABS_DISTANCE,0);
                     input_sync(this->input);
                 }

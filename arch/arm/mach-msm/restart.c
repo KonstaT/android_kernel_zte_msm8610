@@ -243,9 +243,9 @@ static irqreturn_t resout_irq_handler(int irq, void *dev_id)
 		;
 	return IRQ_HANDLED;
 }
-
+/*[CQID:000000] ztebsp yaotierui debug and log switch begin 20140222,  */
 static int zte_dump_switch =1;
-
+/*[CQID:000000] ztebsp yaotierui debug and log switch end 20140222,  */
 
 static void msm_restart_prepare(const char *cmd)
 {
@@ -254,11 +254,11 @@ static void msm_restart_prepare(const char *cmd)
 	/* This looks like a normal reboot at this point. */
 	set_dload_mode(0);
 
-
+/*[CQID:000000] ztebsp yaotierui debug and log switch begin 20140222,  */
 	/* Write download mode flags if we're panic'ing */
 	if(zte_dump_switch)
 	    set_dload_mode(in_panic);
-
+/*[CQID:000000] ztebsp yaotierui debug and log switch end 20140222,  */
 
 	/* Write download mode flags if restart_mode says so */
 	if (restart_mode == RESTART_DLOAD)
@@ -358,10 +358,10 @@ static int __init msm_restart_init(void)
 	dload_mode_addr = MSM_IMEM_BASE + DLOAD_MODE_ADDR;
 	emergency_dload_mode_addr = MSM_IMEM_BASE +
 		EMERGENCY_DLOAD_MODE_ADDR;
-
+/*[CQID:000000] ztebsp yaotierui debug and log switch begin 20140222,  */
        if(zte_dump_switch)
 	set_dload_mode(download_mode);
-
+/*[CQID:000000] ztebsp yaotierui debug and log switch end 20140222,  */
 #endif
 	msm_tmr0_base = msm_timer_get_timer0_base();
 	restart_reason = MSM_IMEM_BASE + RESTART_REASON_ADDR;
@@ -374,7 +374,7 @@ static int __init msm_restart_init(void)
 }
 early_initcall(msm_restart_init);
 
-
+/*[CQID:000000] ztebsp yaotierui debug and log switch begin 20140222,  */
 static int __init dump_switch_setup(char *str) 
 {
 	if(get_option(&str, &zte_dump_switch))
@@ -389,3 +389,4 @@ static int __init dump_switch_setup(char *str)
 	  }
 }
 early_param("zte_dump_switch", dump_switch_setup);
+/*[CQID:000000] ztebsp yaotierui debug and log switch end 20140222,  */

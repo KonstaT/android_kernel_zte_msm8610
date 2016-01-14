@@ -35,7 +35,7 @@
 #include <linux/rwsem.h>
 #include <linux/mfd/pm8xxx/misc.h>
 #include <linux/qpnp/qpnp-adc.h>
-#include <linux/proc_fs.h> 
+#include <linux/proc_fs.h> //ZTE_MODIFY wanghaifei for wifi and bt product 2013-12-10
 
 #include <mach/msm_smd.h>
 #include <mach/msm_iomap.h>
@@ -2279,6 +2279,7 @@ wcnss_wlan_remove(struct platform_device *pdev)
 	return 0;
 }
 
+// ZTE_MODIFY wanghaifei for wifi and bt product 2013-12-10 begin
 static char wlan_info[51] = "Device manufacturing:Qualcomm Model Number:WCN3620";
 static ssize_t wlan_info_read_proc(char *page, char **start, off_t off,
                                 int count, int *eof, void *data)
@@ -2328,6 +2329,7 @@ static void remove_wlan_info_proc_file(void)
                 bt_id_proc_file = NULL;
         }
 }
+// ZTE_MODIFY wanghaifei 2013-12-10 end
 
 static const struct dev_pm_ops wcnss_wlan_pm_ops = {
 	.suspend	= wcnss_wlan_suspend,
@@ -2367,14 +2369,18 @@ static int __init wcnss_wlan_init(void)
 	if (ret < 0)
 		pr_err("wcnss: pre-allocation failed\n");
 #endif
+// ZTE_MODIFY wanghaifei for wifi and bt product 2013-12-10 begin
         create_wlan_info_proc_file();
+// ZTE_MODIFY wanghaifei 2013-12-10 end
 
 	return ret;
 }
 
 static void __exit wcnss_wlan_exit(void)
 {
+// ZTE_MODIFY wanghaifei for wifi and bt product 2013-12-10 begin
         remove_wlan_info_proc_file();
+// ZTE_MODIFY wanghaifei 2013-12-10 end
 
 	if (penv) {
 		if (penv->pil)

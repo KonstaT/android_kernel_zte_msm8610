@@ -258,7 +258,7 @@ static int64_t of_batterydata_convert_battery_id_kohm(int batt_id_uv,
 /*ZTE_MODIFY BY WANGBIN FOR BATTERYDATA
 *DON NOT SUPPORT FUNCTION FEATURE NOW
 */
-#if 1
+#if 1//def BATTERYDATA_ZTE_4V2_1400MAH
     resistor_value_kohm = 110;
     printk("wb fixed resistor_value_kohm=%lld\n",resistor_value_kohm);
 #else
@@ -316,7 +316,7 @@ int of_batterydata_read_data(struct device_node *batterydata_container_node,
 		pr_err("No battery data found\n");
 		return -ENODATA;
 	}
-        
+        /*ZTE_MODIFY BY WANGBIN JUST FOR PRINT LOG*/
         printk("wb best_id_kohm =%d, best_delta=%d\n",best_id_kohm,best_delta);
 	return of_batterydata_load_battery_data(best_node,
 					best_id_kohm, batt_data);

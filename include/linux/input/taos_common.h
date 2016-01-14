@@ -12,8 +12,10 @@
 ********************************************************************************
 *       Proprietary to Taos Inc., 1001 Klein Road #300, Plano, TX 75074        *
 *******************************************************************************/
+//[ECID:000000] ZTEBSP wanghaifei start 20111018, add for security
 #ifndef __TAOS_COMMON_H
 #define __TAOS_COMMON_H
+//[ECID:000000] ZTEBSP wanghaifei end 20111018
 
 // ioctl numbers
 #define TAOS_IOCTL_MAGIC        	0XCF
@@ -75,4 +77,4 @@ struct taos_platform_data {
 
 };
 
-#endif 
+#endif //[ECID:000000] ZTEBSP wanghaifei start 20111018, add for security

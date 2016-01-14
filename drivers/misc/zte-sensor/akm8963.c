@@ -30,7 +30,7 @@
 #include <linux/workqueue.h>
 #include <linux/freezer.h>
 #include <linux/akm8963.h>
-#include <linux/regulator/consumer.h> 
+#include <linux/regulator/consumer.h> //[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 #include <linux/of_gpio.h>
 
 
@@ -73,16 +73,19 @@ struct akm8963_data {
 	char outbit;
 	int	irq;
 	int	rstn;
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
         bool    vdd_enabled;
         bool    vio_enabled;
         struct regulator *vdd;
         struct regulator *vio;
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 };
 
 static struct akm8963_data *s_akm;
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 static int chipid=0xff;
 #ifdef CONFIG_OF
 #define AKM_VDD_MIN_UV        2700000
@@ -90,6 +93,7 @@ static int chipid=0xff;
 #define AKM_VIO_MIN_UV        1700000
 #define AKM_VIO_MAX_UV        2000000
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 /***** I2C I/O function ***********************************************/
 static int akm8963_i2c_rxdata(
@@ -253,10 +257,12 @@ static int AKECS_Reset(
 	int err = 0;
 
 	if (hard != 0) {
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 		printk("akm8963 gose to reset!");
                 gpio_direction_output(akm->rstn, 0);
                 udelay(5);
                 gpio_direction_output(akm->rstn, 1);
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 	} else {
 		/* Set measure mode */
 		buffer[0] = AK8963_REG_CNTL2;
@@ -1307,6 +1313,7 @@ static int akm8963_resume(struct device *dev)
 	return 0;
 }
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
 static int akm_parse_dt(struct device *dev,  struct akm8963_platform_data *pdata)
 {
@@ -1468,6 +1475,7 @@ static int akm_power_init(struct akm8963_data *data, bool on)
         return 0;
 }
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 int akm8963_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -1492,6 +1500,7 @@ int akm8963_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	}
 
 	/***** Set layout information *****/
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
         if (client->dev.of_node) {
                 printk("akm8963 use device tree\n");
                 pdata = devm_kzalloc(&client->dev, sizeof(struct akm8963_platform_data), GFP_KERNEL);
@@ -1511,6 +1520,7 @@ int akm8963_probe(struct i2c_client *client, const struct i2c_device_id *id)
         }
 
         printk("akm irq = %d\n", client->irq);
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 	if (pdata) {
 		/* Platform data is available. copy its value to local. */
@@ -1529,6 +1539,7 @@ int akm8963_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	/***** I2C initialization *****/
 	s_akm->i2c = client;
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
         s_akm->vdd_enabled = false;
         s_akm->vio_enabled = false;
         err = akm_power_init(s_akm, true);
@@ -1545,6 +1556,7 @@ int akm8963_probe(struct i2c_client *client, const struct i2c_device_id *id)
                 }
 		AKECS_Reset(s_akm, 1);
         }
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 	/* check connection */
 	err = akm8963_i2c_check_device(client);
@@ -1665,10 +1677,12 @@ static const struct i2c_device_id akm8963_id[] = {
 	{AKM8963_I2C_NAME, 0 },
 	{ }
 };
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 static struct of_device_id akm_match_table[] = {
          { .compatible = "akm,ak8963", },
          { },
 };
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 static const struct dev_pm_ops akm8963_pm_ops = {
 	.suspend    = akm8963_suspend,
@@ -1708,12 +1722,14 @@ static struct i2c_driver akm8963_driver = {
 	.driver = {
 		.name	= AKM8963_I2C_NAME,
 		.pm		= &akm8963_pm_ops,
-		.of_match_table = akm_match_table, 
+		.of_match_table = akm_match_table, //[ECID:000000] ZTEBSP wanghaifei 20130906, for device tree driver
 	},
 };
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 late_initcall(create_akm_info_proc_file);
 module_i2c_driver(akm8963_driver);
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 
 MODULE_AUTHOR("viral wang <viral_wang@htc.com>");

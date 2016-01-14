@@ -1,3 +1,4 @@
+//[ECID:000000] ZTEBSP wanghaifei start 20111226, for attiny44a
 #ifndef __ATTINY44A_H
 #define __ATTINY44A_H
 
@@ -9,3 +10,4 @@ struct attiny_platform_data {
 };
 
 #endif
+//[ECID:000000] ZTEBSP wanghaifei end 20111226, for attiny44a

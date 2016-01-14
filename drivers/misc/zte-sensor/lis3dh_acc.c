@@ -63,9 +63,11 @@
 //yaotierui
 #include	<linux/module.h>
 #include <linux/proc_fs.h> // added by yangze for create proc file 20121011
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #include <linux/regulator/consumer.h>
  #include <linux/of_gpio.h>
 #include <linux/gpio.h>
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 #define	DEBUG	1
 
 #define	G_MAX		16000
@@ -118,8 +120,10 @@
 
 #define ENABLE_HIGH_RESOLUTION	1
 
+//[ECID:000000] ZTEBSP wanghaifei start 20120426, modify power off
 //#define LIS3DH_ACC_PM_OFF		0x00
 #define LIS3DH_ACC_PM_OFF		0x08
+//[ECID:000000] ZTEBSP wanghaifei end 20120426, modify power off
 #define LIS3DH_ACC_ENABLE_ALL_AXES	0x07
 
 
@@ -238,18 +242,21 @@ struct lis3dh_acc_data {
 	int irq2;
 	struct work_struct irq2_work;
 	struct workqueue_struct *irq2_work_queue;
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
 	bool    vdd_enabled;
 	bool    vio_enabled;
 	struct regulator *vdd;
         struct regulator *vio;
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 #ifdef DEBUG
 	u8 reg_addr;
 #endif
 };
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 static int chipid = 0xff;
 #ifdef CONFIG_OF
 #define LIS3DH_VDD_MIN_UV        2700000
@@ -257,6 +264,7 @@ static int chipid = 0xff;
 #define LIS3DH_VIO_MIN_UV        1700000
 #define LIS3DH_VIO_MAX_UV        1950000
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 static int lis3dh_acc_i2c_read(struct lis3dh_acc_data *acc,
 				u8 * buf, int len)
@@ -397,6 +405,7 @@ err_resume_state:
 	return err;
 }
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
 static int lis3dh_power_init(struct lis3dh_acc_data *data, bool on)
 {
@@ -514,6 +523,7 @@ static int lis3dh_power_init(struct lis3dh_acc_data *data, bool on)
 	return 0;
 }
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 static void lis3dh_acc_device_power_off(struct lis3dh_acc_data *acc)
 {
@@ -1209,6 +1219,7 @@ static void lis3dh_acc_input_work_func(struct work_struct *work)
 	mutex_unlock(&acc->lock);
 }
 
+//[ECID:000000] ZTEBSP wanghaifei start 20120426, remove open and close fuction
 /*
 int lis3dh_acc_input_open(struct input_dev *input)
 {
@@ -1224,6 +1235,7 @@ void lis3dh_acc_input_close(struct input_dev *dev)
 	lis3dh_acc_disable(acc);
 }
 */
+//[ECID:000000] ZTEBSP wanghaifei end 20120426, remove open and close fuction
 
 static int lis3dh_acc_validate_pdata(struct lis3dh_acc_data *acc)
 {
@@ -1275,8 +1287,10 @@ static int lis3dh_acc_input_init(struct lis3dh_acc_data *acc)
 		goto err0;
 	}
 
+//[ECID:000000] ZTEBSP wanghaifei start 20120426, remove open and close fuction
 //	acc->input_dev->open = lis3dh_acc_input_open;
 //	acc->input_dev->close = lis3dh_acc_input_close;
+//[ECID:000000] ZTEBSP wanghaifei end 20120426, remove open and close fuction
 	//acc->input_dev->name = LIS3DH_ACC_DEV_NAME;
 	acc->input_dev->name = "zte_acc";
 	acc->input_dev->id.bustype = BUS_I2C;
@@ -1331,6 +1345,7 @@ static void lis3dh_acc_input_cleanup(struct lis3dh_acc_data *acc)
 	input_unregister_device(acc->input_dev);
 }
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
 static int lis3dh_parse_dt(struct device *dev,
                                 struct lis3dh_acc_platform_data *lis3dh_pdata)
@@ -1449,6 +1464,7 @@ static int lis3dh_parse_gpio(struct device *dev)
         return 0;
 }
 #endif /* !CONFIG_OF */
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 static int lis3dh_acc_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
@@ -1470,6 +1486,7 @@ static int lis3dh_acc_probe(struct i2c_client *client,
 		goto exit_check_functionality_failed;
 	}
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
         if (client->dev.of_node) {
                 printk("lis3dh use device tree\n");
                 pdata = devm_kzalloc(&client->dev, sizeof(struct lis3dh_acc_platform_data), GFP_KERNEL);
@@ -1490,6 +1507,7 @@ static int lis3dh_acc_probe(struct i2c_client *client,
 
 
 	if (pdata == NULL) {
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 		dev_err(&client->dev, "platform data is NULL. exiting.\n");
 		err = -ENODEV;
 		goto exit_check_functionality_failed;
@@ -1576,6 +1594,7 @@ static int lis3dh_acc_probe(struct i2c_client *client,
 	acc->resume_state[RES_TT_TLAT] = 0x00;
 	acc->resume_state[RES_TT_TW] = 0x00;
 
+//[ECID:000000] ZTEBSP wanghaifei 20130905 start, for power on
 	acc->vdd_enabled = false;
 	acc->vio_enabled = false;
        err = lis3dh_power_init(acc, true);
@@ -1583,6 +1602,7 @@ static int lis3dh_acc_probe(struct i2c_client *client,
                 dev_err(&acc->client->dev, "power init failed! err=%d", err);
                 goto err_pdata_init;
         }
+//[ECID:000000] ZTEBSP wanghaifei 20130905 end, for power on
 
 	err = lis3dh_acc_device_power_on(acc);
 	if (err < 0) {
@@ -1592,6 +1612,7 @@ static int lis3dh_acc_probe(struct i2c_client *client,
 
 	atomic_set(&acc->enabled, 1);
 
+//[ECID:000000] ZTEBSP wanghaifei start 20120426, only check chip id on probe
 	data = WHO_AM_I;
 	err = lis3dh_acc_i2c_read(acc, &data, 1);
 	if ((err < 0)|| (data != WHOAMI_LIS3DH_ACC)) {
@@ -1601,6 +1622,7 @@ static int lis3dh_acc_probe(struct i2c_client *client,
 		lis3dh_parse_gpio(&client->dev);
 	}
 	chipid = data;
+//[ECID:000000] ZTEBSP wanghaifei 20120426, only check chip id on probe
 
 	err = lis3dh_acc_update_g_range(acc, acc->pdata->g_range);
 	if (err < 0) {
@@ -1701,10 +1723,12 @@ static const struct i2c_device_id lis3dh_acc_id[]
 
 MODULE_DEVICE_TABLE(i2c, lis3dh_acc_id);
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 static struct of_device_id lis3dh_match_table[] = {
          { .compatible = "st,lis3dh", },
          { }, 
 };
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 //[ECID 000000] yangze add for ic information add 20121121 begin
 static ssize_t acc_info_read_proc(char *page, char **start, off_t off,
@@ -1737,7 +1761,7 @@ static struct i2c_driver lis3dh_acc_driver = {
 	.driver = {
 			.owner = THIS_MODULE,
 			.name = LIS3DH_ACC_DEV_NAME,
-			.of_match_table = lis3dh_match_table,
+			.of_match_table = lis3dh_match_table,//[ECID:000000] ZTEBSP wanghaifei 20130906, for device tree driver
 		  },
 	.probe = lis3dh_acc_probe,
 	.remove = __devexit_p(lis3dh_acc_remove),
@@ -1746,8 +1770,10 @@ static struct i2c_driver lis3dh_acc_driver = {
 	.id_table = lis3dh_acc_id,
 };
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 late_initcall(create_acc_info_proc_file);
 module_i2c_driver(lis3dh_acc_driver);
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 MODULE_DESCRIPTION("lis3dh digital accelerometer sysfs driver");
 MODULE_AUTHOR("Matteo Dameno, Carmine Iascone, STMicroelectronics");

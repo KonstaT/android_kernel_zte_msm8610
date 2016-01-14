@@ -10,7 +10,8 @@
  * GNU General Public License for more details.
  */
 
-#define USE_SPK_RECEIVER_SWITCH_EXT_GPIO 93
+//#define DEBUG//ZTEBSP lichuangchuang add for printk. 20130922
+#define USE_SPK_RECEIVER_SWITCH_EXT_GPIO 93//ZTEBSP lichuangchuang add fo spk_receiver_switch. 20131031
 
 #include <linux/module.h>
 #include <linux/init.h>
@@ -1137,8 +1138,10 @@ static const struct snd_kcontrol_new msm8x10_wcd_snd_controls[] = {
 		       0, 12, 1, line_gain),
 	SOC_SINGLE_TLV("HPHR Volume", MSM8X10_WCD_A_RX_HPH_R_GAIN,
 		       0, 12, 1, line_gain),
+//ZTEBSP lichuangchuang add for adc volume start. 20131106
 	SOC_SINGLE_TLV("ADC1 Volume", MSM8X10_WCD_A_TX_1_EN, 2, 19, 0, analog_gain),
 	SOC_SINGLE_TLV("ADC2 Volume", MSM8X10_WCD_A_TX_2_EN, 2, 19, 0, analog_gain),
+//ZTEBSP lichuangchuang add for adc volume end. 20131106
 	SOC_SINGLE_S8_TLV("RX1 Digital Volume",
 			  MSM8X10_WCD_A_CDC_RX1_VOL_CTL_B2_CTL,
 			  -84, 40, digital_gain),
@@ -2299,6 +2302,7 @@ static struct snd_soc_dai_driver msm8x10_wcd_i2s_dai[] = {
 	},
 };
 
+//ZTEBSP lichuangchuang mod for spk_receiver_switch start. 20131031
 static int msm8x10_wcd_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 	struct snd_kcontrol *kcontrol, int event)
 {
@@ -2327,10 +2331,12 @@ static int msm8x10_wcd_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 	}
 	return 0;
 }
+//ZTEBSP lichuangchuang add fo spk_receiver_switch end. 20131031
 
 static const struct snd_soc_dapm_widget msm8x10_wcd_dapm_widgets[] = {
 	/*RX stuff */
 	SND_SOC_DAPM_OUTPUT("EAR"),
+//ZTEBSP lichuangchuang mod for spk_receiver_switch start. 20131031
 #if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
 	SND_SOC_DAPM_PGA_E("EAR PA", MSM8X10_WCD_A_RX_EAR_EN, 4, 0, NULL, 0,
 			msm8x10_wcd_codec_enable_ear_pa, SND_SOC_DAPM_POST_PMU|
@@ -2339,6 +2345,7 @@ static const struct snd_soc_dapm_widget msm8x10_wcd_dapm_widgets[] = {
 	SND_SOC_DAPM_PGA_E("EAR PA", MSM8X10_WCD_A_RX_EAR_EN, 4, 0, NULL, 0,
 			msm8x10_wcd_codec_enable_ear_pa, SND_SOC_DAPM_POST_PMU),
 #endif
+//ZTEBSP lichuangchuang add fo spk_receiver_switch end. 20131031
 	SND_SOC_DAPM_MIXER("DAC1", MSM8X10_WCD_A_RX_EAR_EN, 6, 0, dac1_switch,
 		ARRAY_SIZE(dac1_switch)),
 
@@ -3762,6 +3769,7 @@ static int __init msm8x10_wcd_codec_init(void)
 	if (ret != 0)
 		pr_err("%s: Failed to add msm8x10 wcd I2C driver - error %d\n",
 		       __func__, ret);
+//ZTEBSP lichuangchuang mod for spk_receiver_switch start. 20131031
 #if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
 	if (USE_SPK_RECEIVER_SWITCH_EXT_GPIO >= 0) {
 		ret = gpio_request(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, "SPK_RECEIVER_SWITCH_EXT_GPIO");
@@ -3773,16 +3781,19 @@ static int __init msm8x10_wcd_codec_init(void)
 		gpio_direction_output(USE_SPK_RECEIVER_SWITCH_EXT_GPIO, 0);
 	}
 #endif
+//ZTEBSP lichuangchuang mod for spk_receiver_switch end. 20131031
 	return ret;
 }
 
 static void __exit msm8x10_wcd_codec_exit(void)
 {
 	i2c_del_driver(&msm8x10_wcd_i2c_driver);
+//ZTEBSP lichuangchuang mod for spk_receiver_switch start. 20131031
 #if USE_SPK_RECEIVER_SWITCH_EXT_GPIO
 	if (gpio_is_valid(USE_SPK_RECEIVER_SWITCH_EXT_GPIO))
 		gpio_free(USE_SPK_RECEIVER_SWITCH_EXT_GPIO);
 #endif
+//ZTEBSP lichuangchuang mod for spk_receiver_switch end. 20131031
 }
 
 

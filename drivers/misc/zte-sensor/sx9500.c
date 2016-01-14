@@ -20,7 +20,7 @@
 #include <linux/input/smtc/misc/sx95xx_i2c_reg.h>
 #include <linux/input/smtc/misc/sx9500_platform_data.h>  /* platform data */
 #include <linux/input/smtc/misc/smtc_sar_test.h>
-#include <linux/device.h> 
+#include <linux/device.h> //[ECID:000000] ZTEBSP wanghaifei 20130906, for device tree
 
 /*! \struct sx9500
  * Specialized struct containing input event data, platform data, and
@@ -158,20 +158,20 @@ static int read_regStat(psx95XX_t this)
 /*! \brief  Initialize I2C config from platform data
  * \param this Pointer to main parent struct
  */
-
+/** ZTE_MODIFY zhaoy196673: modified by zhaoyang for adding SX9500 prox driver */
 //#define INITIAL_REG_PRINT
-	
+/** ZTE_MODIFY end zhaoyang  */	
 
 static void hw_init(psx95XX_t this)
 {
     psx9500_t pDevice = 0;
     psx9500_platform_data_t pdata = 0;
 	
-
+/** ZTE_MODIFY zhaoy196673: modified by zhaoyang for adding SX9500 prox driver */
 #ifdef INITIAL_REG_PRINT
     u8 data = 0;
 #endif
-	
+/** ZTE_MODIFY end zhaoyang  */	
 
     int i=0 ,j=0;
     /* configure device */
@@ -195,7 +195,7 @@ static void hw_init(psx95XX_t this)
         dev_err(this->pdev, "ERROR! platform data 0x%x\n",(unsigned int)pDevice->hw);
     }
 #ifdef INITIAL_REG_PRINT
-	
+	/** ZTE_MODIFY zhaoy196673: modified by zhaoyang for adding SX9500 prox driver */
     printk("@@@@@zhaoyang in SX9500 prox  init_reg_value\n");
     for(i = 0; i <= 0x10; i++) {
         read_register(this,i,&data);
@@ -204,7 +204,7 @@ static void hw_init(psx95XX_t this)
     msleep(20);
     write_register(this, 0x00, 0xff);
     msleep(5);	
-	
+/** ZTE_MODIFY end zhaoyang  */	
 #endif
 }
 /*********************************************************************/
@@ -257,11 +257,11 @@ static void touchProcess(psx95XX_t this)
         dev_dbg(this->pdev, "Inside touchProcess()\n");
         read_register(this, SX950X_CPSSTAT_REG, &i);
         pDevice->capstate_Value =  i;
-
+/** ZTE_MODIFY zhaoy196673: modified by zhaoyang for adding SX9500 prox driver */
 #ifdef RUNTIME_REG_PRINT			
         printk("@@@@@@@	@@@@pDevice->capstate_Value = 0x%x   @@@@@@@\n\n", (unsigned int)pDevice->capstate_Value);
 #endif	
-	
+/** ZTE_MODIFY end zhaoyang  */	
         if( (i & 0xf0) > 0)
             prox_status = 1;
 
@@ -270,6 +270,7 @@ static void touchProcess(psx95XX_t this)
     }
 }
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
 static int sx9500_parse_dt(struct device *dev, psx9500_platform_data_t pdata)
 {
@@ -282,6 +283,7 @@ static int sx9500_parse_dt(struct device *dev, psx9500_platform_data_t pdata)
 	reuturn  -ENODEV;
 }
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 /*! \fn static int sx9500_probe(struct i2c_client *client, const struct i2c_device_id *id)
  * \brief Probe function
@@ -298,9 +300,10 @@ static int sx9500_probe(struct i2c_client *client, const struct i2c_device_id *i
     int dummy_ret;
 
     dev_info(&client->dev, "sx9500_probe()\n");
-
+/** ZTE_MODIFY zhaoy196673: modified by zhaoyang for adding SX9500 prox driver */
 	printk("@@@zhaoyang196673 Semtech sx9500 on board, NOTICE: NOT attiny44a !!!\n");
-	
+/** ZTE_MODIFY end zhaoyang  */	
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
         if (client->dev.of_node) {
                 printk("sx9500 use device tree\n");
                 pplatData = devm_kzalloc(&client->dev, sizeof(*pplatData), GFP_KERNEL);
@@ -319,6 +322,7 @@ static int sx9500_probe(struct i2c_client *client, const struct i2c_device_id *i
                 pplatData = client->dev.platform_data;
         }
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
     if (!pplatData) {
         dev_err(&client->dev, "platform data is required!\n");
@@ -412,16 +416,18 @@ static struct i2c_device_id sx9500_idtable[] = {
 };
 MODULE_DEVICE_TABLE(i2c, sx9500_idtable);
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 static struct of_device_id sx9500_match_table[] = {
          { .compatible = "semtech,sx9500", },
          { }, 
 };
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 static struct i2c_driver sx9500_driver = {
     .driver = {
         .owner  = THIS_MODULE,
         .name   = DRIVER_NAME,
-	.of_match_table = sx9500_match_table, 
+	.of_match_table = sx9500_match_table, //[ECID:000000] ZTEBSP wanghaifei 20130906, for device tree driver
     },
     .id_table = sx9500_idtable,
     .probe	  = sx9500_probe,
@@ -438,7 +444,7 @@ static void __exit sx9500_exit(void)
     i2c_del_driver(&sx9500_driver);
 }
 
-late_initcall(sx9500_init); 
+late_initcall(sx9500_init); //[ECID:000000] ZTEBSP wanghaifei 20130905, modify driver init
 module_exit(sx9500_exit);
 
 MODULE_AUTHOR("Semtech Corp. (http://www.semtech.com/)");

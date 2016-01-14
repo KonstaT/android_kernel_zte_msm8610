@@ -82,7 +82,7 @@ enum dsi_panel_bl_ctrl {
 	BL_PWM,
 	BL_WLED,
 	BL_DCS_CMD,
-	BL_GPIO,  
+	BL_GPIO,  //ZTE_MODIFY 2014-1-21 add new backlight type
 	UNKNOWN_CTRL,
 };
 

@@ -40,6 +40,7 @@
 #define FBIOGET_DISPINFO        0x4618
 #define FBIO_WAITFORVSYNC	_IOW('F', 0x20, __u32)
 
+//ZTE_ADD
 #define FBIO_CLEAR_SPLASH       0x40046dc8
 /////
 

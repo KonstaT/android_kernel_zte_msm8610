@@ -25,7 +25,7 @@
 #include <mach/qpnp-int.h>
 #include <mach/msm_iomap.h>
 #include <mach/scm.h>
-#include <linux/module.h> 
+#include <linux/module.h> //[ecid:000000] ZTEBSP wanghaifei 20131128, for EXPORT_SYMBOL
 
 #include "board-dt.h"
 
@@ -127,6 +127,7 @@ void __init board_dt_populate(struct of_dev_auxdata *adata)
 	of_platform_populate(of_find_node_by_path("/soc"),
 			     of_default_bus_match_table, adata, NULL);
 }
+//[ECID:000000] ZTEBSP wanghaifei start 20131128, add hw version
 #define MODELNO_LEN 10
 static char modelno[MODELNO_LEN] = "unknown";
 static int __init modelno_kernel_setup(char *p) 
@@ -142,4 +143,5 @@ char *get_modelno(void)
 }
 EXPORT_SYMBOL(get_modelno);
 early_param("androidboot.hwversion", modelno_kernel_setup);
+//[ECID:000000] ZTEBSP wanghaifei end 20131128, add hw version
 

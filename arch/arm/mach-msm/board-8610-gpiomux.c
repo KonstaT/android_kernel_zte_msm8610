@@ -10,6 +10,11 @@
  * GNU General Public License for more details.
  *
  */
+/* =============================================================================
+when        who       what, where, why                       comment tag
+----------  --------  -------------------------------------  ---------------------------------- 
+2014-06-19  leijian   camera VDD change                      ZTE_CAM_LEIJIAN_20140619
+==============================================================================*/
 
 #include <linux/init.h>
 #include <linux/ioport.h>
@@ -343,6 +348,7 @@ static struct msm_gpiomux_config msm_focaltech_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &gpio_spi_susp_config,
 		},
 	},
+#if 0 // ZTE_CAM_LEIJIAN_20140619  begin
 	{
 		.gpio      = 87,		/* BLSP1 QUP4 SPI_DATA_MISO */
 		.settings = {
@@ -350,6 +356,7 @@ static struct msm_gpiomux_config msm_focaltech_configs[] __initdata = {
 			[GPIOMUX_SUSPENDED] = &gpio_spi_susp_config,
 		},
 	},
+#endif // ZTE_CAM_LEIJIAN_20140619  end
 	{
 		.gpio      = 89,		/* BLSP1 QUP4 SPI_CLK */
 		.settings = {

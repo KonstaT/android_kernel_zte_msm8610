@@ -39,7 +39,7 @@ int sysmon_send_event(enum subsys_id dest_ss, const char *event_ss,
 		      enum subsys_notif_type notif);
 int sysmon_get_reason(enum subsys_id dest_ss, char *buf, size_t len);
 int sysmon_send_shutdown(enum subsys_id dest_ss);
-int sysmon_send_led_cmd(enum subsys_id dest_ss, const char *tx_buf);
+int sysmon_send_led_cmd(enum subsys_id dest_ss, const char *tx_buf);//[ECID:000000]ZTEBSP wanghaifei 20131105, add for led
 #else
 static inline int sysmon_send_event(enum subsys_id dest_ss,
 				    const char *event_ss,
@@ -56,10 +56,12 @@ static inline int sysmon_send_shutdown(enum subsys_id dest_ss)
 {
 	return 0;
 }
+//[ECID:000000]ZTEBSP wanghaifei 20131105 start, add for led
 static inline int sysmon_send_led_cmd(enum subsys_id dest_ss, const char *tx_buf)
 {
 	return 0;
 }
+//[ECID:000000]ZTEBSP wanghaifei 20131105 end, add for led
 #endif
 
 #endif

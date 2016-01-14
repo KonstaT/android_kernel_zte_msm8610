@@ -200,6 +200,7 @@ out:
 	return ret;
 }
 
+//[ECID:000000] ZTEBSP wanghaifei 201301104 start, for LED control
 int sysmon_send_led_cmd(enum subsys_id dest_ss, const char *tx_buf)
 {
 	struct sysmon_subsys *ss = &subsys[dest_ss];
@@ -225,6 +226,7 @@ out:
 	printk("send led cmd: %s, len= %d, rev:%s,ret = %d\n", tx_buf,strlen(tx_buf), ss->rx_buf,ret);
 	return ret;
 }
+//[ECID:000000] ZTEBSP wanghaifei 201301104 end, for LED control
 /**
  * sysmon_get_reason() - Retrieve failure reason from a subsystem.
  * @dest_ss:	ID of subsystem to query

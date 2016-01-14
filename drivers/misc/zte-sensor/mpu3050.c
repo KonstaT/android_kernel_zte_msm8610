@@ -641,6 +641,7 @@ out:
 	return ret;
 }
 
+//[ECID:000000] ZTEBSP wanghaifei start 20120221, add sys attr for product test
 static int sensor_i2c_read(struct i2c_adapter *i2c_adap,
                            unsigned char address, unsigned char reg, 
                            unsigned int len, unsigned char *data)
@@ -729,6 +730,7 @@ static struct attribute *mpu3050_attr[] = {
 static struct attribute_group mpu3050_dev_attr_grp = {
         .attrs = mpu3050_attr,
 };
+//[ECID:000000] ZTEBSP wanghaifei end 20120221, add sys attr for product test
 
 
 static int __devinit mpu_probe(struct i2c_client *client,
@@ -738,9 +740,11 @@ static int __devinit mpu_probe(struct i2c_client *client,
 	int ret;
 
 	dev_info(&client->dev, "probe start. - new\n");
+//[ECID:000000] ZTEBSP wanghaifei start 20120221, add sys file for sensor detect
         ret = sysfs_create_group(&client->dev.kobj, &mpu3050_dev_attr_grp);
         if (ret) 
                 dev_err(&client->adapter->dev, "mpu3050 create sys file failed\n");
+//[ECID:000000] ZTEBSP wanghaifei end 20120221, add sys file for sensor detect
 
 	mpu = kzalloc(sizeof(struct mpu_data), GFP_KERNEL);
 	if (!mpu) {
@@ -819,7 +823,7 @@ static int __devexit mpu_remove(struct i2c_client *client)
 	mpu_disable(mpu);
 	remove_sysfs_interfaces(&client->dev);
 	kfree(mpu);
-	sysfs_remove_group(&client->dev.kobj, &mpu3050_dev_attr_grp); 
+	sysfs_remove_group(&client->dev.kobj, &mpu3050_dev_attr_grp); //[ECID:000000] ZTEBSP wanghaifei 20120221,  remove sys file
 
 	return 0;
 }

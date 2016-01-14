@@ -79,6 +79,7 @@
 #define MSMFB_WRITEBACK_SET_MIRRORING_HINT _IOW(MSMFB_IOCTL_MAGIC, 167, \
 						unsigned int)
 #define MSMFB_ASYNC_BLIT              _IOW(MSMFB_IOCTL_MAGIC, 168, unsigned int)
+//ZTE_ADD
 #define MSMFB_CLEAR_SPLASH              _IOW(MSMFB_IOCTL_MAGIC, 200, unsigned int)
 //////
 #define FB_TYPE_3D_PANEL 0x10101010

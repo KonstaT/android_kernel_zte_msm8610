@@ -10,8 +10,15 @@
  * GNU General Public License for more details.
  *
  */
+
+/* =============================================================================
+when        who       what, where, why                       comment tag
+----------  --------  -------------------------------------  ---------------------------------- 
+2014-06-19  leijian   camera VDD change                      ZTE_CAM_LEIJIAN_20140619
+==============================================================================*/
+
 #include "msm_sensor.h"
-#include <linux/proc_fs.h>  
+#include <linux/proc_fs.h>  //ZTEBSP yuxin add for read proc canm info,2013.12.10
 #define GC2235_SENSOR_NAME "gc2235"
 DEFINE_MSM_MUTEX(gc2235_mut);
 
@@ -31,14 +38,14 @@ static struct msm_sensor_power_setting gc2235_power_setting[] = {
 		.config_val = 0,
 		.delay = 10,
 	},
-	
+//ZTE_CAM_LEIJIAN_20140619 begin	
 	{
-		.seq_type = SENSOR_VREG,
-		.seq_val = CAM_VANA,
-		.config_val = 0,
+		.seq_type = SENSOR_GPIO,
+		.seq_val = SENSOR_GPIO_VANA,
+		.config_val = GPIO_OUT_HIGH,
 		.delay = 10,
 	},
-
+//ZTE_CAM_LEIJIAN_20140619 end
 	
 	{
 		.seq_type = SENSOR_CLK,
@@ -95,7 +102,7 @@ static const struct i2c_device_id gc2235_i2c_id[] = {
 	{ }
 };
 
-
+/*ZTEBSP yuxin add for read camera ID info,2013.12.10 ++*/
 static ssize_t camera_id_read_proc(char *page,char **start,off_t off,int count,int *eof,void* data)
 {		 	
     int ret;
@@ -118,19 +125,19 @@ static void camera_proc_file(void)
      }
 }
 
-
+/*ZTEBSP yuxin add for read camera ID info,2013.12.10 --*/
 
 static int32_t msm_gc2235_i2c_probe(struct i2c_client *client,
 	const struct i2c_device_id *id)
 {
 	 int32_t rc=0;
 	  rc= msm_sensor_i2c_probe(client, id, &gc2235_s_ctrl);
-	  
+	  /*ZTEBSP yuxin add for read camera ID info,2013.12.10 ++*/
 	if(rc==0)
 	{
           camera_proc_file();
        }
-	
+	/*ZTEBSP yuxin add for read camera ID info,2013.12.10 --*/
 	return rc;
 }
 

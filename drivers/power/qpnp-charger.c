@@ -215,8 +215,10 @@
 #define BOOST_FLASH_WA			BIT(1)
 #define POWER_STAGE_WA			BIT(2)
 
+//ZTE-MODIFIED, make lcd on when charger inserted
 struct wake_lock usbin_valid_irq_wakelock;
 static bool probe_done_flag = false;
+//ZTE-MODIFIED, make lcd on when charger inserted
 
 struct qpnp_chg_irq {
 	int		irq;
@@ -679,6 +681,7 @@ qpnp_chg_check_usb_coarse_det(struct qpnp_chg_chip *chip)
 	return (usbin_chg_rt_sts & USB_COARSE_DET) ? 1 : 0;
 }
 
+//ZTE_MODIFY for ovp settle BY DINGXUEHUA
 #if 0
 #define USBIN_HEALTH_PATH	"/data/misc/usb_health"
 static void qpnp_chg_write_usbin_health_to_node(int charger_health)
@@ -735,6 +738,7 @@ error2:
 	set_fs(old_fs);
 }
 #endif
+//ZTE_MODIFY for ovp settle BY DINGXUEHUA
 
 static int
 qpnp_chg_check_usbin_health(struct qpnp_chg_chip *chip)
@@ -1488,8 +1492,10 @@ qpnp_chg_usb_usbin_valid_irq_handler(int irq, void *_chip)
 	pr_err("usbin-valid triggered: %d host_mode: %d\n",
 		usb_present, host_mode);
 
+	//ZTE-MODIFIED, make lcd on when charger inserted
 	if(probe_done_flag & usb_present)
 		wake_lock_timeout(&usbin_valid_irq_wakelock,5*HZ);
+	//ZTE-MODIFIED, make lcd on when charger inserted
 
 	/* In host mode notifications cmoe from USB supply */
 	if (host_mode)
@@ -4332,10 +4338,10 @@ qpnp_chg_hwinit(struct qpnp_chg_chip *chip, u8 subtype,
 		pr_err("Invalid peripheral subtype\n");
 	}
 
-        
+        /* zte modify begin by Ding Xuehua*/
         /* do not allow adjustment to be applied */
         qpnp_chg_masked_write(chip,0x1043,BIT(7),0x7F,1);
-        
+        /* zte modify end*/
 
 	return rc;
 }
@@ -4841,8 +4847,10 @@ qpnp_charger_probe(struct spmi_device *spmi)
 			get_prop_batt_present(chip),
 			get_prop_batt_health(chip));
 
+	//ZTE-MODIFIED, make lcd on when charger inserted
 	wake_lock_init(&usbin_valid_irq_wakelock, WAKE_LOCK_SUSPEND, "usbin_valid_irq_wl");
 	probe_done_flag = true;
+	//ZTE-MODIFIED, make lcd on when charger inserted
 
 	return 0;
 
@@ -4888,7 +4896,9 @@ qpnp_charger_remove(struct spmi_device *spmi)
 	regulator_unregister(chip->otg_vreg.rdev);
 	regulator_unregister(chip->boost_vreg.rdev);
 
+	//ZTE-MODIFIED, make lcd on when charger inserted
 	wake_lock_destroy(&usbin_valid_irq_wakelock);
+	//ZTE-MODIFIED, make lcd on when charger inserted
 
 	return 0;
 }

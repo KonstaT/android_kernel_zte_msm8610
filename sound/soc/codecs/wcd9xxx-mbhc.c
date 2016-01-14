@@ -10,6 +10,7 @@
  * GNU General Public License for more details.
  */
 
+//#define DEBUG//ZTEBSP lichuangchuang add for printk. 20130922
 
 #include <linux/module.h>
 #include <linux/init.h>
@@ -3856,6 +3857,7 @@ static int wcd9xxx_init_and_calibrate(struct wcd9xxx_mbhc *mbhc)
 
 		if (!ret && mbhc->mbhc_cfg->gpio) {
 			/* Requested with IRQF_DISABLED */
+			//enable_irq(mbhc->mbhc_cfg->gpio_irq);//ZTEBSP lichuangchuang delete for enable headset irq. 20130925
 
 			/* Bootup time detection */
 			wcd9xxx_swch_irq_handler(mbhc);

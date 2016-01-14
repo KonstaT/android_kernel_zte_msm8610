@@ -46,9 +46,11 @@
 //yaotierui
 #include	<linux/module.h>
 #include <linux/proc_fs.h> // added by yangze for create proc file 20121011
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #include <linux/regulator/consumer.h>
 #include <linux/of_gpio.h> 
 #include <linux/gpio.h>
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 #include <linux/delay.h>
 
 /** Maximum polled-device-reported rot speed value value in dps*/
@@ -138,18 +140,21 @@ struct l3g4200d_data {
 	int hw_initialized;
 	int selftest_enabled;
 	atomic_t enabled;
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
         bool    vdd_enabled;
         bool    vio_enabled;
         struct regulator *vdd;
         struct regulator *vio;
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 
 	u8 reg_addr;
 	u8 resume_state[RESUME_ENTRIES];
 };
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 static int chipid = 0xff;
 #ifdef CONFIG_OF
 #define L3G4200D_VDD_MIN_UV        2700000
@@ -157,6 +162,7 @@ static int chipid = 0xff;
 #define L3G4200D_VIO_MIN_UV        1700000
 #define L3G4200D_VIO_MAX_UV        1950000
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 static int l3g4200d_i2c_read(struct l3g4200d_data *gyro,
 				  u8 *buf, int len)
@@ -321,9 +327,11 @@ static int l3g4200d_update_odr(struct l3g4200d_data *gyro,
 
 	}
 
+//[ECID:000000] ZTEBSP wanghaifei start 20120423, don't change pm here
 //	config[1] = odr_table[i].mask;
 //	config[1] |= (ENABLE_ALL_AXES + PM_NORMAL);
 	config[1] = (gyro->resume_state[RES_CTRL_REG1] & 0x0f) | odr_table[i].mask;
+//[ECID:000000] ZTEBSP wanghaifei end 20120423, don't change pm here
 
 	/* If device is currently enabled, we need to write new
 	 *  configuration out to it */
@@ -406,6 +414,7 @@ static int l3g4200d_hw_init(struct l3g4200d_data *gyro)
 	return err;
 }
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
 static int l3g4200d_power_init(struct l3g4200d_data *data, bool on)
 {
@@ -523,6 +532,7 @@ static int l3g4200d_power_init(struct l3g4200d_data *data, bool on)
         return 0;
 }
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 static void l3g4200d_device_power_off(struct l3g4200d_data *dev_data)
 {
@@ -815,9 +825,11 @@ static void l3g4200d_input_poll_func(struct input_polled_dev *dev)
 	/* dev_data = container_of((struct delayed_work *)work,
 				 struct l3g4200d_data, input_work); */
 
+//[ECID:000000] ZTEBSP wanghaifei start 20120423, return if not enabled
 	if (!atomic_read(&gyro->enabled)) {
 		return;
 	}
+//[ECID:000000] ZTEBSP wanghaifei end 20120423, return if not enabled
 	mutex_lock(&gyro->lock);
 	err = l3g4200d_get_data(gyro, &data_out);
 	if (err < 0)
@@ -827,15 +839,18 @@ static void l3g4200d_input_poll_func(struct input_polled_dev *dev)
     //       printk("gyro x=%d, y=%d, z=%d\n",data_out.x,data_out.y,data_out.z);
            l3g4200d_report_values(gyro, &data_out);
 	}
+//[ECID:000000] ZTEBSP wanghaifei start 20120423, change ODR rate if poll interval changed 
 	if (gyro->pdata->poll_interval != gyro->input_poll_dev->poll_interval) {
 		gyro->pdata->poll_interval = gyro->input_poll_dev->poll_interval;
 		l3g4200d_update_odr(gyro, gyro->pdata->poll_interval);
 	}
+//[ECID:000000] ZTEBSP wanghaifei end 20120423, change ODR rate if poll interval changed 
 
 	mutex_unlock(&gyro->lock);
 
 }
 
+//[ECID:000000] ZTEBSP wanghaifei start 20120423, remove open and close
 /*
 int l3g4200d_input_open(struct input_dev *input)
 {
@@ -851,6 +866,7 @@ void l3g4200d_input_close(struct input_dev *dev)
 	l3g4200d_disable(gyro);
 }
 */
+//[ECID:000000] ZTEBSP wanghaifei end 20120423, remove open and close
 
 static int l3g4200d_validate_pdata(struct l3g4200d_data *gyro)
 {
@@ -915,8 +931,10 @@ static int l3g4200d_input_init(struct l3g4200d_data *gyro)
 
 	input = gyro->input_poll_dev->input;
 
+//[ECID:000000] ZTEBSP wanghaifei start 20120423, remove open and close
 //	input->open = l3g4200d_input_open;
 //	input->close = l3g4200d_input_close;
+//[ECID:000000] ZTEBSP wanghaifei end 20120423, remove open and close
 
 	input->id.bustype = BUS_I2C;
 	input->dev.parent = &gyro->client->dev;
@@ -954,6 +972,7 @@ static void l3g4200d_input_cleanup(struct l3g4200d_data *gyro)
 	input_free_polled_device(gyro->input_poll_dev);
 }
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
 static int l3g4200d_parse_dt(struct device *dev,
                                 struct l3g4200d_gyr_platform_data *pdata)
@@ -1047,6 +1066,7 @@ static int l3g4200d_parse_dt(struct device *dev,
         return -ENODEV;
 }
 #endif /* !CONFIG_OF */
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 static int l3g4200d_probe(struct i2c_client *client,
 					const struct i2c_device_id *devid)
@@ -1066,6 +1086,7 @@ static int l3g4200d_probe(struct i2c_client *client,
 		goto err0;
 	}
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
         if (client->dev.of_node) {
                 printk("l3g4200d use device tree\n");
                 pdata = devm_kzalloc(&client->dev, sizeof(struct l3g4200d_gyr_platform_data), GFP_KERNEL);
@@ -1085,6 +1106,7 @@ static int l3g4200d_probe(struct i2c_client *client,
         }  
 
 	if (pdata == NULL) {
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 		dev_err(&client->dev, "platform data is NULL. exiting.\n");
 		err = -ENODEV;
 		goto err0;
@@ -1131,12 +1153,13 @@ static int l3g4200d_probe(struct i2c_client *client,
 
 	memset(gyro->resume_state, 0, ARRAY_SIZE(gyro->resume_state));
 
-	gyro->resume_state[RES_CTRL_REG1] = 0x0F; 
+	gyro->resume_state[RES_CTRL_REG1] = 0x0F; // [ECID:000000] ZTEBSP wanghaifei 20120423
 	gyro->resume_state[RES_CTRL_REG2] = 0x00;
 	gyro->resume_state[RES_CTRL_REG3] = 0x00;
 	gyro->resume_state[RES_CTRL_REG4] = 0x00;
 	gyro->resume_state[RES_CTRL_REG5] = 0x00;
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 	gyro->vdd_enabled = false;
 	gyro->vio_enabled = false;
         gyro->reg_addr = 0x0F;
@@ -1155,6 +1178,7 @@ static int l3g4200d_probe(struct i2c_client *client,
                 dev_err(&gyro->client->dev, "power init failed! err=%d", err);
                 goto err2;
         }
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 	err = l3g4200d_device_power_on(gyro);
 	if (err < 0) {
@@ -1278,10 +1302,12 @@ static const struct i2c_device_id l3g4200d_id[] = {
 
 MODULE_DEVICE_TABLE(i2c, l3g4200d_id);
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 static struct of_device_id l3g4200d_match_table[] = {
          { .compatible = "st,l3g4200d", },
          { }, 
 };
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 //[ECID 000000] yangze add for ic information add 20121121 begin
 static ssize_t gyro_info_read_proc(char *page, char **start, off_t off,
@@ -1320,7 +1346,7 @@ static struct i2c_driver l3g4200d_driver = {
 			.owner = THIS_MODULE,
 			.name = L3G4200D_GYR_DEV_NAME,
 			.pm = &l3g4200d_pm,
-			.of_match_table = l3g4200d_match_table,
+			.of_match_table = l3g4200d_match_table,//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 	},
 	.probe = l3g4200d_probe,
 	.remove = __devexit_p(l3g4200d_remove),
@@ -1328,8 +1354,10 @@ static struct i2c_driver l3g4200d_driver = {
 
 };
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 late_initcall(create_gyro_info_proc_file);
 module_i2c_driver(l3g4200d_driver);
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 MODULE_DESCRIPTION("l3g4200d digital gyroscope sysfs driver");
 MODULE_AUTHOR("Matteo Dameno, Carmine Iascone, STMicroelectronics");

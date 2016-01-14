@@ -52,7 +52,7 @@ static int dsi_on(struct mdss_panel_data *pdata)
 	return rc;
 }
 
-
+/*ZTE_MODIFY by zhenglian for LCD display*/
 static int first_start_up_on  = 1;
 static int first_start_up_off = 0;
 extern struct mdss_panel_data *g_pdata;
@@ -71,7 +71,7 @@ static int dsi_panel_handler(struct mdss_panel_data *pdata, int enable)
 				panel_data);
 
 	if (enable) {
-		
+		/*ZTE_MODIFY by zhenglian for LCD display*/
 		if (first_start_up_on)
 		{
 			first_start_up_on = 0;
@@ -87,7 +87,7 @@ static int dsi_panel_handler(struct mdss_panel_data *pdata, int enable)
 		if (rc)
 			pr_err("dsi_panel_handler panel on failed %d\n", rc);
 	} else {
-		
+		/*ZTE_MODIFY by zhenglian for LCD display*/
 		if (first_start_up_off)
 		{
 			first_start_up_off = 0;

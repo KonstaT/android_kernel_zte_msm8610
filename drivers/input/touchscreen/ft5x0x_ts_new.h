@@ -24,7 +24,7 @@ struct Fts_finger_data {
 	int z;
 	int touch_id;
 	int event_flag;
-};
+};//2011-07-11  update ft driver     ZTE_TS_XYM_20110711
 
 struct ft5x0x_ts_platform_data{
 	u16	intr;		/* irq number	*/

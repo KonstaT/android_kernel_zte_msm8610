@@ -10,6 +10,7 @@
  * GNU General Public License for more details.
  */
 
+//#define DEBUG//ZTEBSP lichuangchuang add for printk. 20130922
 
 #include <linux/clk.h>
 #include <linux/delay.h>
@@ -114,9 +115,11 @@ static struct wcd9xxx_mbhc_config mbhc_cfg = {
 	.use_int_rbias = false,
 	.micbias_enable_flags = 1 << MBHC_MICBIAS_ENABLE_THRESHOLD_HEADSET |
 				1 << MBHC_MICBIAS_ENABLE_REGULAR_HEADSET,
+//ZTEBSP lichuangchuang mod for headset detect disable cs start. 20131113
 	.cs_enable_flags = 0,/*(1 << MBHC_CS_ENABLE_POLLING |
 			    1 << MBHC_CS_ENABLE_INSERTION |
 			    1 << MBHC_CS_ENABLE_REMOVAL),*/
+//ZTEBSP lichuangchuang mod for headset detect disable cs end. 20131113
 	.do_recalibration = false,
 	.use_vddio_meas = false,
 };
@@ -646,7 +649,7 @@ static void *def_msm8x10_wcd_mbhc_cal(void)
 #undef S
 #define S(X, Y) ((WCD9XXX_MBHC_CAL_PLUG_TYPE_PTR(msm8x10_wcd_cal)->X) = (Y))
 	S(v_no_mic, 30);
-	S(v_hs_max, 2850);
+	S(v_hs_max, 2850);//ZTEBSP lichuangchuang mod 2550 to 2850. 20131111
 #undef S
 #define S(X, Y) ((WCD9XXX_MBHC_CAL_BTN_DET_PTR(msm8x10_wcd_cal)->X) = (Y))
 	S(c[0], 62);

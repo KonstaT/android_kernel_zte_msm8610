@@ -26,7 +26,7 @@
 #include <linux/input/smtc/misc/sx9500_platform_data.h>  /* platform data */
 #include <linux/input/smtc/misc/smtc_sar_test.h>
 
-
+/** ZTE_MODIFY zhaoy196673: modified by zhaoyang for adding SX9500 prox driver */
 //#define RUNTIME_REG_PRINT
 #ifdef RUNTIME_REG_PRINT
 //static int read_registerEx(psx95XX_t this, unsigned char reg,
@@ -135,7 +135,7 @@ static int read_register(psx95XX_t this, u8 address, u8 *value)
 #define SPEED_DOWN 5
 //At lesat 3 ,otherwise too many printk to make system NO respond
 #endif
-
+/** ZTE_MODIFY end zhaoyang  */
 
 #ifdef USE_THREADED_IRQ
 static void sx95XX_process_interrupt(psx95XX_t this,u8 nirqlow)
@@ -143,13 +143,13 @@ static void sx95XX_process_interrupt(psx95XX_t this,u8 nirqlow)
     int status = 0;
     int counter = 0;
 
-	
+	/** ZTE_MODIFY zhaoy196673: modified by zhaoyang for adding SX9500 prox driver */
 #ifdef RUNTIME_REG_PRINT
     static int ll = 0;
     int j,k;
     u8 data = 0;
 #endif
-		
+	/** ZTE_MODIFY end zhaoyang  */	
 
     if (!this) {
         printk(KERN_ERR "sx95XX_worker_func, NULL sx95XX_t\n");
@@ -168,7 +168,7 @@ static void sx95XX_process_interrupt(psx95XX_t this,u8 nirqlow)
         }
     }
 
-    
+    /** ZTE_MODIFY zhaoy196673: modified by zhaoyang for adding SX9500 prox driver */
 #ifdef RUNTIME_REG_PRINT
     if(ll++ == SPEED_DOWN) {
         ll = 0;
@@ -184,7 +184,7 @@ static void sx95XX_process_interrupt(psx95XX_t this,u8 nirqlow)
         printk("\nreg[0x%x] = 0x%x\n",0x01 ,data);
     }
 #endif
-    
+    /** ZTE_MODIFY end zhaoyang  */
 
     if (unlikely(this->useIrqTimer && nirqlow)) {
         /* In case we need to send a timer for example on a touchscreen
@@ -304,6 +304,7 @@ void sx95XX_suspend(psx95XX_t this)
     if (this){
         disable_irq(this->irq);
         
+//[ECID:000000] ZTEBSP 20130906 start, to adapt device tree
 #ifndef CONFIG_OF
 	gpio_request(ZTE_GPIO_SAR_SENSOR_TXEN, "sar_txen_pin");
 	gpio_direction_output(ZTE_GPIO_SAR_SENSOR_TXEN, 0);
@@ -311,11 +312,13 @@ void sx95XX_suspend(psx95XX_t this)
 #else
 //todo:add device tree code
 #endif
+//[ECID:000000] ZTEBSP 20130906 end, to adapt device tree
     }
 }
 void sx95XX_resume(psx95XX_t this)
 {
     if (this) {
+//[ECID:000000] ZTEBSP 20130906 start, to adapt device tree
 #ifndef CONFIG_OF
 				gpio_request(ZTE_GPIO_SAR_SENSOR_TXEN, "sar_txen_pin");
 				gpio_direction_output(ZTE_GPIO_SAR_SENSOR_TXEN, 1);
@@ -324,6 +327,7 @@ void sx95XX_resume(psx95XX_t this)
 #else
 //todo:add device tree code
 #endif
+//[ECID:000000] ZTEBSP 20130906 end, to adapt device tree
 #ifdef USE_THREADED_IRQ
         mutex_lock(&this->mutex);
         /* Just in case need to reset any uncaught interrupts */

@@ -167,7 +167,7 @@ static int __devinit vkeys_probe(struct platform_device *pdev)
 		x1 = x2 + border;
 		x2 = x2 + border + width;
 		center_x = x1 + (x2 - x1) / 2;
-        
+        /*ZTE_MODIFY*/
 		printk("wangminrong i = %d add %d %d %d %d\r\n",i,center_x, center_y, width, height);
 		#if 1
 		if(i == 0)

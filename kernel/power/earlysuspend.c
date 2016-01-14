@@ -29,6 +29,7 @@ enum {
 	DEBUG_VERBOSE = 1U << 3,
 };
 //static int debug_mask = DEBUG_USER_STATE;
+//[ECID:000000] ZTEBSP 20130905, enable earlysuspend debug
 static int debug_mask = DEBUG_USER_STATE | DEBUG_SUSPEND | DEBUG_VERBOSE; 
 module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 

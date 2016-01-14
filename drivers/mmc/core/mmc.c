@@ -44,7 +44,7 @@ static const unsigned int tacc_mant[] = {
 	35,	40,	45,	50,	55,	60,	70,	80,
 };
 
-
+/* [ECID:000000] ZTEBSP haoweiwei 20131210 record eMMC info into /proc/driver/emmc file start */
 #include <linux/proc_fs.h>
 #define SAMSUNG_EMMC_MANUFACTURER_ID   0x15
 #define HYNIX_EMMC_MANUFACTURER_ID     0x90
@@ -60,7 +60,7 @@ static int msm_emmc_info_read_samsung_proc(char *page, char **start, off_t off, 
 static int msm_emmc_info_read_hynix_proc(char *page, char **start, off_t off, int count, int *eof, void *data);
 static int msm_emmc_info_read_micron_proc(char *page, char **start, off_t off, int count, int *eof, void *data);
 static int msm_emmc_info_read_sandisk_proc(char *page, char **start, off_t off, int count, int *eof, void *data);
-
+/* [ECID:000000] ZTEBSP haoweiwei 20121210 record eMMC info into /proc/driver/emmc file end */
 
 #define UNSTUFF_BITS(resp,start,size)					\
 	({								\
@@ -723,7 +723,7 @@ static struct device_type mmc_type = {
 	.groups = mmc_attr_groups,
 };
 
-
+/* [ECID:000000] ZTEBSP haoweiwei 20131210 record eMMC info into /proc/driver/emmc file start */
 static int msm_emmc_info_read_samsung_proc(
         char *page, char **start, off_t off, int count, int *eof, void *data)
 {
@@ -817,7 +817,7 @@ void deinit_emmc_info_proc(void)
 	}
     return;	
 }
-
+/* [ECID:000000] ZTEBSP haoweiwei 20131210 record eMMC info into /proc/driver/emmc file end */
 
 /*
  * Select the PowerClass for the current bus width
@@ -2020,9 +2020,9 @@ int mmc_attach_mmc(struct mmc_host *host)
 {
 	int err;
 	u32 ocr;
-       
+       /* [ECID:000000] ZTEBSP haoweiwei 20131210 record eMMC info into /proc/driver/emmc file start */
        static bool emmc_proc_init = false;
-       
+       /* [ECID:000000] ZTEBSP haoweiwei 20131210 record eMMC info into /proc/driver/emmc file end */
 
 	BUG_ON(!host);
 	WARN_ON(!host->claimed);
@@ -2076,12 +2076,12 @@ int mmc_attach_mmc(struct mmc_host *host)
 	if (err)
 		goto err;
 
-    
+    /* [ECID:000000] ZTEBSP haoweiwei 20131210 record eMMC info into /proc/driver/emmc file start */
        if(false == emmc_proc_init){
         init_emmc_info_proc(host);
         emmc_proc_init = true;
        }
-    
+    /* [ECID:000000] ZTEBSP haoweiwei 20131210 record eMMC info into /proc/driver/emmc file end */
 
 	mmc_release_host(host);
 	err = mmc_add_card(host->card);

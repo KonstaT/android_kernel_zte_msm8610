@@ -25,11 +25,13 @@
 #include <linux/workqueue.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+// [ECID:000000] ZTEBSP wanghaifei start20120216, modify header file position
 #include <linux/kxtik.h>
 #include <linux/input-polldev.h>
 #include <linux/regulator/consumer.h>
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
+// [ECID:000000] ZTEBSP wanghaifei end 20120216, modify header file position
 #include <linux/version.h>
 #include <linux/proc_fs.h> // added by yangze for create proc file 20121111
 
@@ -86,14 +88,16 @@ struct kxtik_data {
 	struct workqueue_struct *workqueue;
 	struct work_struct irq_work;
 	struct input_polled_dev *poll_dev;
-	struct mutex mutex; 
-	int enable; 
+	struct mutex mutex; //[ECID:000000] ZTEBSP wanghaifei 20120307, add lock to avoid died lock
+	int enable; //[ECID:000000] ZTEBSP wanghaifei 20120312, add flag detect for avoid read after disable accel
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
 	bool    vdd_enabled;
 	bool    vio_enabled;
 	struct regulator *vdd;
         struct regulator *vio;
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 	unsigned int poll_interval;
 	unsigned int poll_delay;
 	u8 shift;
@@ -102,6 +106,7 @@ struct kxtik_data {
 	u8 int_ctrl;
 };
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 static int chipid = 0xff;
 #ifdef CONFIG_OF
 #define KXTF9_VDD_MIN_UV        2700000
@@ -109,6 +114,7 @@ static int chipid = 0xff;
 #define KXTF9_VIO_MIN_UV        1700000
 #define KXTF9_VIO_MAX_UV        2000000
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 static int kxtik_i2c_read(struct kxtik_data *tik, u8 addr, u8 *data, int len)
 {
@@ -135,10 +141,12 @@ static void kxtik_report_acceleration_data(struct kxtik_data *tik)
 	s16 acc_data[3]; /* Data bytes from hardware xL, xH, yL, yH, zL, zH */
 	s16 x, y, z;
 	int err;
+//[ECID:000000] ZTEBSP wanghaifei start 20120307, modify lock to avoid died lock
 
 	mutex_lock(&tik->mutex);
 	err = kxtik_i2c_read(tik, XOUT_L, (u8 *)acc_data, 6);
 	mutex_unlock(&tik->mutex);
+//[ECID:000000] ZTEBSP wanghaifei end 20120307, modify lock to avoid died lock
 	if (err < 0)
 		dev_err(&tik->client->dev, "accelerometer data read failed\n");
 
@@ -222,6 +230,7 @@ static int kxtik_update_odr(struct kxtik_data *tik, unsigned int poll_interval)
 	return 0;
 }
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
 static int kxtf9_power_init(struct kxtik_data *data, bool on)
 {
@@ -339,6 +348,7 @@ static int kxtf9_power_init(struct kxtik_data *data, bool on)
 }
 
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 static int kxtik_device_power_on(struct kxtik_data *tik)
 {
@@ -584,9 +594,11 @@ static void kxtik_poll(struct input_polled_dev *dev)
 	struct kxtik_data *tik = dev->private;
 	unsigned int poll_interval = dev->poll_interval;
 
+//[ECID:000000] ZTEBSP wanghaifei start 20120312, don't try to read register if not enabled
 	if (!tik->enable) {
 		return;
 	}
+//[ECID:000000] ZTEBSP wanghaifei end 20120312, don't try to read register if not enabled
 	kxtik_report_acceleration_data(tik);
 
 	if (poll_interval != tik->poll_interval) {
@@ -595,6 +607,7 @@ static void kxtik_poll(struct input_polled_dev *dev)
 	}
 }
 
+//[ECID:000000] ZTEBSP wanghaifei 20120217 start, set enable
 #if 0
 static void kxtik_polled_input_open(struct input_polled_dev *dev)
 {
@@ -610,7 +623,9 @@ static void kxtik_polled_input_close(struct input_polled_dev *dev)
 	kxtik_disable(tik);
 }
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20120217 end
 
+//[ECID:000000] ZTEBSP yangze start 20120827
 
 static ssize_t attr_polling_rate_show(struct device *dev,
 				     struct device_attribute *attr,
@@ -711,6 +726,7 @@ static int remove_sysfs_interfaces(struct device *dev)
 		device_remove_file(dev, attributes + i);
 	return 0;
 }
+//[ECID:000000] ZTEBSP yangze end 20120827
 
 static int __devinit kxtik_setup_polled_device(struct kxtik_data *tik)
 {
@@ -729,9 +745,11 @@ static int __devinit kxtik_setup_polled_device(struct kxtik_data *tik)
 
 	poll_dev->private = tik;
 	poll_dev->poll = kxtik_poll;
+//[ECID:000000] ZTEBSP wanghaifei 20120217 start, set poll time
 //	poll_dev->open = kxtik_polled_input_open;
 //	poll_dev->close = kxtik_polled_input_close;
         poll_dev->poll_interval = tik->pdata.poll_interval;
+//[ECID:000000] ZTEBSP wanghaifei 20120217 end, set poll time
 
 
 	kxtik_init_input_device(tik, poll_dev->input);
@@ -788,6 +806,7 @@ out:
 	return retval;
 }
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
 static int kxtf9_parse_dt(struct device *dev,
                                 struct kxtik_platform_data *kxtik_pdata)
@@ -907,6 +926,7 @@ static int kxtf9_parse_gpio(struct device *dev)
         return 0;
 }       
 #endif /* !CONFIG_OF */
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 
 static int __devinit kxtik_probe(struct i2c_client *client,
@@ -923,6 +943,7 @@ static int __devinit kxtik_probe(struct i2c_client *client,
 		return -ENXIO;
 	}
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 	if (client->dev.of_node) {
 		printk("kxtik use device tree\n");
 		pdata = devm_kzalloc(&client->dev, sizeof(struct kxtik_platform_data), GFP_KERNEL);
@@ -940,6 +961,7 @@ static int __devinit kxtik_probe(struct i2c_client *client,
 		printk("kxtik not use device tree\n");
 		pdata = client->dev.platform_data;
         }  
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 	if (!pdata) {
 		dev_err(&client->dev, "platform data is NULL; exiting\n");
@@ -963,6 +985,7 @@ static int __devinit kxtik_probe(struct i2c_client *client,
 	}
 
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 	tik->vdd_enabled = false;
 	tik->vio_enabled = false;
         err = kxtf9_power_init(tik, true);
@@ -979,6 +1002,7 @@ static int __devinit kxtik_probe(struct i2c_client *client,
 	} else {
                 kxtf9_parse_gpio(&client->dev);
 	}
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 	i2c_set_clientdata(client, tik);
 
@@ -1025,8 +1049,8 @@ static int __devinit kxtik_probe(struct i2c_client *client,
 		}
 		//added by ytangze 20120827
 		
-		mutex_init(&tik->mutex); 
-		tik->enable = 0; 
+		mutex_init(&tik->mutex); //[ECID:000000] ZTEBSP wanghaifei 20120307, add mutex init
+		tik->enable = 0; //[ECID:000000] ZTEBSP wanghaifei 20120312, for enable detect
 	}
 
 	return 0;
@@ -1070,6 +1094,7 @@ static int __devexit kxtik_remove(struct i2c_client *client)
 }
 
 #ifdef CONFIG_PM_SLEEP
+//[ECID:000000] ZTEBSP wanghaifei start 20120307, modify suspend and resume 
 static int suspend_power = 0;
 static int kxtik_suspend(struct device *dev)
 {
@@ -1102,6 +1127,7 @@ static int kxtik_resume(struct device *dev)
 
 	return retval;
 }
+//[ECID:000000] ZTEBSP wanghaifei end 20120307, modify suspend and resume 
 #endif
 
 static SIMPLE_DEV_PM_OPS(kxtik_pm_ops, kxtik_suspend, kxtik_resume);
@@ -1113,10 +1139,12 @@ static const struct i2c_device_id kxtik_id[] = {
 
 MODULE_DEVICE_TABLE(i2c, kxtik_id);
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 static struct of_device_id kxtf9_match_table[] = {
          { .compatible = "kionix,kxtf9", },
          { },
 };
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 
 //[ECID 000000] yangze add for ic information add 20121121 begin
@@ -1148,7 +1176,7 @@ static struct i2c_driver kxtik_driver = {
 	.driver = {
 		.name	= NAME,
 		.owner	= THIS_MODULE,
-		.of_match_table = kxtf9_match_table, 
+		.of_match_table = kxtf9_match_table, //[ECID:000000] ZTEBSP wanghaifei 20130906, for device tree driver
 		.pm	= &kxtik_pm_ops,
 	},
 	.probe		= kxtik_probe,
@@ -1156,8 +1184,10 @@ static struct i2c_driver kxtik_driver = {
 	.id_table	= kxtik_id,
 };
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 late_initcall(create_acc_info_proc_file);
 module_i2c_driver(kxtik_driver);
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 MODULE_DESCRIPTION("KXTIK accelerometer driver");
 MODULE_AUTHOR("Kuching Tan <kuchingtan@kionix.com>");

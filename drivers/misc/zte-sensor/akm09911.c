@@ -32,7 +32,7 @@
 #include <linux/uaccess.h>
 #include <linux/workqueue.h>
 #include <linux/of_gpio.h>
-#include <linux/regulator/consumer.h> 
+#include <linux/regulator/consumer.h> //[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 
 #include <linux/proc_fs.h> // added by yangze for create proc file 20121011
@@ -76,16 +76,19 @@ struct akm_compass_data {
 	char layout;
 	int	irq;
 	int	gpio_rstn;
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
         bool    vdd_enabled;
         bool    vio_enabled;
         struct regulator *vdd;
         struct regulator *vio;
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 };
 
 static struct akm_compass_data *s_akm;
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 static int chipid=0xff;
 #ifdef CONFIG_OF
 #define AKM_VDD_MIN_UV        2700000
@@ -93,6 +96,7 @@ static int chipid=0xff;
 #define AKM_VIO_MIN_UV        1700000
 #define AKM_VIO_MAX_UV        2000000
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 
 /***** I2C I/O function ***********************************************/
@@ -251,9 +255,11 @@ static int AKECS_Reset(
 	mutex_lock(&akm->sensor_mutex);
 
 	if (hard != 0) {
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 		gpio_direction_output(akm->gpio_rstn, 0);
 		udelay(5);
 		gpio_direction_output(akm->gpio_rstn, 1);
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 		/* No error is returned */
 		err = 0;
 	} else {
@@ -1450,6 +1456,7 @@ static int akm09911_i2c_check_device(
 	return err;
 }
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 #ifdef CONFIG_OF
 static int akm_parse_dt(struct device *dev,  struct akm09911_platform_data *pdata)
 {
@@ -1594,6 +1601,7 @@ static int akm_power_init(struct akm_compass_data *data, bool on)
 	return 0;
 }
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 int akm_compass_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -1642,6 +1650,7 @@ int akm_compass_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		s_akm->delay[i] = -1;
 
 	/***** Set platform information *****/
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
         if (client->dev.of_node) {
                 printk("akm09911 use device tree\n");
                 pdata = devm_kzalloc(&client->dev, sizeof(struct akm09911_platform_data), GFP_KERNEL);
@@ -1661,6 +1670,7 @@ int akm_compass_probe(struct i2c_client *client, const struct i2c_device_id *id)
         }
 
 	printk("akm irq = %d\n", client->irq);
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 	if (pdata) {
 		/* Platform data is available. copy its value to local. */
 		s_akm->layout = pdata->layout;
@@ -1678,6 +1688,7 @@ int akm_compass_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	/* set client data */
 	i2c_set_clientdata(client, s_akm);
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 	s_akm->vdd_enabled = false;
 	s_akm->vio_enabled = false;
 	err = akm_power_init(s_akm, true);
@@ -1695,6 +1706,7 @@ int akm_compass_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 		AKECS_Reset(s_akm, 1);
 	}  
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 	/* check connection */
 	err = akm09911_i2c_check_device(client);
 	if (err < 0) {
@@ -1791,10 +1803,12 @@ static const struct i2c_device_id akm_compass_id[] = {
 	{ }
 };
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 static struct of_device_id akm_match_table[] = {
          { .compatible = "akm,ak09911", },
          { },
 };
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 static const struct dev_pm_ops akm_compass_pm_ops = {
 	.suspend	= akm_compass_suspend,
@@ -1833,12 +1847,14 @@ static struct i2c_driver akm_compass_driver = {
 	.driver = {
 		.name	= AKM_I2C_NAME,
 		.pm		= &akm_compass_pm_ops,
-		.of_match_table = akm_match_table, 
+		.of_match_table = akm_match_table, //[ECID:000000] ZTEBSP wanghaifei 20130906, for device tree driver
 	},
 };
 
+//[ECID:000000] ZTEBSP wanghaifei 20130906 start, for device tree driver
 late_initcall(create_akm_info_proc_file);
 module_i2c_driver(akm_compass_driver);
+//[ECID:000000] ZTEBSP wanghaifei 20130906 end, for device tree driver
 
 MODULE_AUTHOR("viral wang <viral_wang@htc.com>");
 MODULE_DESCRIPTION("AKM compass driver");

@@ -28,10 +28,11 @@
 #include <linux/slab.h>
 #include <linux/timer.h>
 #include <linux/sched.h>
-#include <mach/../../sysmon.h>
+#include <mach/../../sysmon.h>//[ECID:000000] ZTEBSP wanghaifei 20131105, add include
 
 #define MAX_KEYPAD_BL_LEVEL	16
 #define BLINK_LED_NUM   2
+//[ECID:000000] ZTEBSP wanghaifei 20131105, start led driver
 #if 1
 #define MSM_LED_DRIVER_NAME		"qcom,leds-gpio-color-led"
 #define LED_TRIGGER_DEFAULT		"none"
@@ -613,3 +614,4 @@ MODULE_DESCRIPTION("MSM PMIC LEDs driver");
 MODULE_LICENSE("GPL v2");
 MODULE_ALIAS("platform:pmic-leds");
 #endif
+//[ECID:000000] ZTEBSP wanghaifei 20131105, end led driver

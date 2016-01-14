@@ -297,6 +297,7 @@ static void mdss_fb_shutdown(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd = platform_get_drvdata(pdev);
 
+    //ZTE_MODIFY for shutdown white LCD problem
     mdss_fb_set_backlight(mfd, 0);
     //   
     
@@ -633,6 +634,7 @@ static void mdss_fb_scale_bl(struct msm_fb_data_type *mfd, u32 *bl_lvl)
 	(*bl_lvl) = temp;
 }
 
+//ZTE_MODIFY zhanglian, resolve TN panel open/close white problem
 static int first_setBacklight = 0;
 //END
 
@@ -680,6 +682,7 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 			mutex_lock(&mfd->bl_lock);
 		}
 	}
+//ZTE_MODIFY zhanglian, resolve TN panel open/close white problem
    if(!first_setBacklight)
 	  first_setBacklight = 1;
 //END
@@ -703,6 +706,7 @@ void mdss_fb_update_backlight(struct msm_fb_data_type *mfd)
 	}
 }
 
+//ZTE_MODIFY zhanglian, resolve TN panel open/close white problem
 struct mdss_panel_data *g_pdata;
 extern void mdss_dsi_panel_bl_ctrl_direct(struct mdss_panel_data *pdata,u32 bl_level);
 struct workqueue_struct *backlight_work_queue = NULL; 
@@ -725,6 +729,7 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
 	int ret = 0;
 
+//ZTE_MODIFY zhanglian, resolve TN panel open/close white problem
 	struct mdss_panel_data *pdata;
 	pdata = dev_get_platdata(&mfd->pdev->dev);
 	g_pdata = pdata;
@@ -747,6 +752,7 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 			mutex_lock(&mfd->update.lock);
 			mfd->update.type = NOTIFY_TYPE_UPDATE;
 			
+//ZTE_MODIFY zhanglian, resolve TN panel open/close white problem
 			if(!first_setBacklight)
 			{
 			     g_pdata = pdata;
@@ -762,6 +768,7 @@ static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,
 	case FB_BLANK_NORMAL:
 	case FB_BLANK_POWERDOWN:
 	default:
+//ZTE_MODIFY zhanglian, resolve TN panel open/close white problem
       if(!first_setBacklight)
       {
 		mdss_dsi_panel_bl_ctrl_direct(pdata,0);
@@ -1165,6 +1172,7 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
 		return -EPERM;
 	}
 
+//ZTE_MODIFY zhanglian, resolve TN panel open/close white problem
 	backlight_work_queue = create_singlethread_workqueue("backlight");	
 	if (backlight_work_queue == NULL) {	    
 		printk(KERN_ERR "msm_fb_probe: fail to creat backlight_work_queue.\n");	 //   goto err_suspend_work_queue;	
@@ -2106,12 +2114,14 @@ static int mdss_fb_display_commit(struct fb_info *info,
 	return ret;
 }
 
+//ZTE_ADD
 static int mdss_fb_clear_splash(struct fb_info *info,
 						unsigned long *argp)
 {
 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
 	int ret = 0;
 
+//ZTE_MODIFY zhanglian, resolve TN panel open/close white problem
 	struct mdss_panel_data *pdata;
 	pdata = dev_get_platdata(&mfd->pdev->dev);
 	mdss_dsi_panel_bl_ctrl_direct(pdata, 0);
@@ -2187,11 +2197,11 @@ static int mdss_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		ret = mdss_fb_display_commit(info, argp);
 		break;
 
-	
+/*ZTE_MODIFY : BEGIN */	
 	case MSMFB_CLEAR_SPLASH:
 		ret = mdss_fb_clear_splash(info, argp);
 		break;
-
+/*ZTE_MODIFY : END */
 	
 	default:
 		if (mfd->mdp.ioctl_handler)

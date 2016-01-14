@@ -673,6 +673,8 @@ int fts_ctpm_update_fw(struct i2c_client *client,FTS_BYTE* pbt_buf, FTS_DWRD dw_
 	fts_ctpm_selfcal(client);
 #endif
 
+	//	ret = Fts_i2c_read(update_client, FT5X0X_REG_FIRMID, &fwVer,1) ;//ZTE_TS_XYM_20110830
+	//	printk("%s: New Fts FW ID read ID = 0x%x,ret = 0x%x\n", __FUNCTION__, fwVer, ret);//ZTE_TS_XYM_20110830
 
 	return 0;
 }

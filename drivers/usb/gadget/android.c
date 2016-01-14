@@ -23,9 +23,11 @@
 #include <linux/kernel.h>
 #include <linux/utsname.h>
 #include <linux/platform_device.h>
+//ztebsp zhangjing add for mac cdrom, ++,20120604
 #if defined(CONFIG_USB_MAC)
 #include <linux/types.h>
 #endif
+//ztebsp zhangjing add for mac cdrom, --,20120604
 #include <linux/pm_qos.h>
 #include <linux/of.h>
 
@@ -37,11 +39,13 @@
 #include <mach/diag_dload.h>
 
 #include "gadget_chips.h"
+//ztebsp zhangjing add for mac cdrom, ++,20120604
 #if defined(CONFIG_USB_MAC)
 #include "u_serial.h"
 #include <linux/miscdevice.h>
 #include <linux/wakelock.h>
 #endif
+//ztebsp zhangjing add for mac cdrom, --,20120604
 /*
  * Kbuild is not very cooperative with respect to linking separately
  * compiled library objects into one module.  So for now we won't use
@@ -1237,9 +1241,11 @@ static struct android_usb_function qdss_function = {
 	.cleanup	= qdss_function_cleanup,
 	.bind_config	= qdss_function_bind_config,
 };
+//ztebsp zhangjing add for at, 20120725,++
 #if defined(CONFIG_USB_AT)
 static char max_serial_transports[32]={'s','m','d',',','t','t','y',',','s','m','d'};//"smd,tty,smd";      
 #endif 
+//ztebsp zhangjing add for at,20120725,--
 
 
 /* SERIAL */
@@ -1298,11 +1304,13 @@ static int serial_function_bind_config(struct android_usb_function *f,
 		goto bind_config;
 
 	serial_initialized = 1;
+//ztebsp zhangjing add for at, 20120725,++
 #if defined(CONFIG_USB_AT)
 	strlcpy(buf, max_serial_transports, sizeof(buf)); 
 #else
 	strlcpy(buf, serial_transports, sizeof(buf));
 #endif
+//ztebsp zhangjing add for at,20120725,--
 	b = strim(buf);
 
 	strlcpy(xport_name_buf, serial_xport_names, sizeof(xport_name_buf));
@@ -1329,6 +1337,7 @@ static int serial_function_bind_config(struct android_usb_function *f,
 	}
 
 bind_config:
+//ztebsp zhangjing add for at, 20120725,++
 #if defined(CONFIG_USB_AT)
 
 	strlcpy(buf, serial_transports, sizeof(buf));
@@ -1343,6 +1352,7 @@ bind_config:
                 }
         }
 #endif
+//ztebsp zhangjing add for at,20120725,--
 	for (i = 0; i < ports; i++) {
 		err = gser_bind_config(c, i);
 		if (err) {
@@ -2181,7 +2191,7 @@ android_bind_enabled_functions(struct android_dev *dev,
 		ret = f_holder->f->bind_config(f_holder->f, c);
 		if (ret) {
 			pr_err("%s: %s failed\n", __func__, f_holder->f->name);
-                        
+                        /*ZTE_MODIFY : BEGIN*/
                         /*
 			while (!list_empty(&c->functions)) {
 				struct usb_function		*f;
@@ -2195,7 +2205,7 @@ android_bind_enabled_functions(struct android_dev *dev,
 			if (c->unbind)
 				c->unbind(c);
                         */
-                        
+                        /*ZTE_MODIFY : END*/
 			return ret;
 		}
 	}
@@ -2438,6 +2448,7 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 	int enabled = 0;
 	bool audio_enabled = false;
 	static DEFINE_RATELIMIT_STATE(rl, 10*HZ, 1);
+	//int err = 0;   ZTE_MODIFY
 
 	if (!cdev)
 		return -ENODEV;
@@ -2472,7 +2483,7 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 			}
 		if (audio_enabled)
 			msleep(100);
-                
+                /*ZTE_MODIFY : BEGIN*/
                 /*
 		err = android_enable(dev);
 		if (err < 0) {
@@ -2483,7 +2494,7 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 			return size;
 		} */
                 android_enable(dev);
-                
+                /*ZTE_MODIFY : END*/
 		dev->enabled = true;
 	} else if (!enabled && dev->enabled) {
 		android_disable(dev);

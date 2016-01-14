@@ -47,7 +47,9 @@
 #include <mach/msm_rtb.h>
 #define CREATE_TRACE_POINTS
 #include <trace/events/printk.h>
+//zte-modify,20130905,add time info in kernel log,begin
 #include <linux/rtc.h>
+//zte-modify,20130905,add time info in kernel log,end
 
 
 /*
@@ -901,8 +903,10 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 	size_t plen;
 	char special;
 
+//zte-modify,20130905,add time info in kernel log,begin	
 	struct timespec ts;
 	struct rtc_time tm;
+//zte-modify,20130905,add time info in kernel log,end
 
 	boot_delay_msec();
 	printk_delay();
@@ -997,6 +1001,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 				t = cpu_clock(printk_cpu);
 				nanosec_rem = do_div(t, 1000000000);
 				
+				//zte-modify,20130905,add time info in kernel log,begin
 				if(t <15)
 				{
 				tlen = sprintf(tbuf, "[%5lu.%06lu] ",
@@ -1010,6 +1015,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 				    tlen = sprintf(tbuf, "[%02d-%02d %02d:%02d:%02d.%03d] ",
 						 tm.tm_mon + 1, tm.tm_mday,tm.tm_hour, tm.tm_min, tm.tm_sec, (int)ts.tv_nsec/1000000);
 				}
+				//zte-modify,20130905,add time info in kernel log,begin
 
 				for (tp = tbuf; tp < tbuf + tlen; tp++)
 					emit_log_char(*tp);
